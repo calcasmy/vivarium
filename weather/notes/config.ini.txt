@@ -1,0 +1,22 @@
+[database]
+dbname                  = your database name
+host                    = database host ip or localhost
+user                    = db owner or user
+password                = db access password
+port                    = 5432 if postgres or port defined
+
+[api]
+weather_api_url         = https://api.weatherapi.com/v1/history.json
+weather_api_key         = weatherapi.com key
+weather_api_lat_long    = 5.98,116.07
+weather_loc_kinabalu    = Gunung Kinabalu
+
+[file]
+absolute_root           = absolute path to the root folder of the 
+rawfielfolder           = rawfiles
+
+[log]
+logdirectory            = logs absolute path
+logfolder               = logs
+max_bytes               = 5242880
+backup_count            = 5
