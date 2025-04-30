@@ -2,3 +2,7 @@ vivaenv/
 weather/rawfiles/
 weather/logs/
 weather/config.ini
+.DS_Store
+weather/.DS_Store
+terratium/.DS_Store
+aquarium/.DS_Store
