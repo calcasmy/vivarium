@@ -7,7 +7,7 @@ from logging.handlers import RotatingFileHandler
 from .config import LogConfig, FileConfig
 
 # from src.utilities.path_utils import get_project_root
-from weather.src.utilities.path_utils import PathUtils
+from .path_utils import PathUtils
 
 class LogHelper:
     _logger = {}  # Use a dictionary to store loggers by name

@@ -1,7 +1,7 @@
 # src/atmosphere/weather_api_client.py
 import requests
-from src.utilities.config import WeatherAPIConfig
-from src.utilities.logger import LogHelper
+from weather.src.utilities.config import WeatherAPIConfig
+from weather.src.utilities.logger import LogHelper
 import datetime
 from typing import Optional
 

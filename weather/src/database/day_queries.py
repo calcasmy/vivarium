@@ -1,5 +1,5 @@
 # src/database/day_queries.py
-from src.database.database_operations import DatabaseOperations
+from weather.src.database.database_operations import DatabaseOperations
 from typing import Dict, Optional
 
 class DayQueries(DatabaseOperations):

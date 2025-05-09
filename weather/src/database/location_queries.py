@@ -1,6 +1,6 @@
 # src/database/location_queries.py
-from src.database.database_operations import DatabaseOperations
-from src.utilities.logger import LogHelper
+from weather.src.database.database_operations import DatabaseOperations
+from weather.src.utilities.logger import LogHelper
 from typing import Optional, Dict
 
 logger = LogHelper.get_logger(__name__)

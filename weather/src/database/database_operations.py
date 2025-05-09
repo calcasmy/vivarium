@@ -68,8 +68,8 @@
 
 # src/database/database_operations.py
 import psycopg2
-from src.utilities.config import DatabaseConfig
-from src.utilities.logger import LogHelper
+from weather.src.utilities.config import DatabaseConfig
+from weather.src.utilities.logger import LogHelper
 from typing import Optional, List, Dict
 
 logger = LogHelper.get_logger(__name__)

@@ -1,5 +1,5 @@
 # src/database/astro_queries.py
-from src.database.database_operations import DatabaseOperations
+from weather.src.database.database_operations import DatabaseOperations
 from typing import Dict, Optional
 
 class AstroQueries(DatabaseOperations):
@@ -41,5 +41,19 @@ class AstroQueries(DatabaseOperations):
         result = self.execute_query(query, params, fetch=True)
         if result:
             return result[0]
+        else:
+            return None
+        
+    def get_sunrise_sunset(self, location_id: int, forecast_date: str) -> Optional[Dict]:
+        """Retrieves only sunrise and sunset times for a given location and date."""
+        query = """
+            SELECT sunrise, sunset
+            FROM public.climate_astro_data
+            WHERE location_id = %s AND forecast_date = %s;
+            """
+        params = (location_id, forecast_date)
+        result = self.execute_query(query, params, fetch=True)
+        if result:
+            return {'sunrise': result[0]['sunrise'], 'sunset': result[0]['sunset']}
         else:
             return None
