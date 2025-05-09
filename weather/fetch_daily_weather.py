@@ -1,5 +1,6 @@
 # src/fetch_daily_weather.py
 import os
+import sys
 import os.path
 import json
 import time
@@ -7,20 +8,41 @@ import time
 from typing import Optional, Dict
 from datetime import datetime, timedelta
 
-from src.atmosphere.weather_api_client import WeatherAPIClient
+if __name__ == "__main__":
+    vivarium_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
-from src.database.database_operations import DatabaseOperations
-from src.database.location_queries import LocationQueries
-from src.database.raw_data_queries import RawDataQueries
-from src.database.forecast_queries import ForecastQueries
-from src.database.day_queries import DayQueries
-from src.database.astro_queries import AstroQueries
-from src.database.condition_queries import ConditionQueries
-from src.database.hour_queries import HourQueries
+    if vivarium_path not in sys.path:
+        sys.path.insert(0, vivarium_path)
 
-from src.utilities.logger import LogHelper
-from src.utilities.config import DatabaseConfig, FileConfig
-from src.utilities.path_utils import PathUtils
+        from weather.src.atmosphere.weather_api_client import WeatherAPIClient
+
+        from weather.src.database.database_operations import DatabaseOperations
+        from weather.src.database.location_queries import LocationQueries
+        from weather.src.database.raw_data_queries import RawDataQueries
+        from weather.src.database.forecast_queries import ForecastQueries
+        from weather.src.database.day_queries import DayQueries
+        from weather.src.database.astro_queries import AstroQueries
+        from weather.src.database.condition_queries import ConditionQueries
+        from weather.src.database.hour_queries import HourQueries
+
+        from weather.src.utilities.logger import LogHelper
+        from weather.src.utilities.config import DatabaseConfig, FileConfig
+        from weather.src.utilities.path_utils import PathUtils
+
+from weather.src.atmosphere.weather_api_client import WeatherAPIClient
+
+from weather.src.database.database_operations import DatabaseOperations
+from weather.src.database.location_queries import LocationQueries
+from weather.src.database.raw_data_queries import RawDataQueries
+from weather.src.database.forecast_queries import ForecastQueries
+from weather.src.database.day_queries import DayQueries
+from weather.src.database.astro_queries import AstroQueries
+from weather.src.database.condition_queries import ConditionQueries
+from weather.src.database.hour_queries import HourQueries
+
+from weather.src.utilities.logger import LogHelper
+from weather.src.utilities.config import DatabaseConfig, FileConfig
+from weather.src.utilities.path_utils import PathUtils
 db_config = DatabaseConfig()
 
 logger = LogHelper.get_logger(__name__)
@@ -44,6 +66,10 @@ class FetchDailyWeather:
         self.astro_db = AstroQueries(db_operations)
         self.condition_db = ConditionQueries(db_operations)
         self.hour_db = HourQueries(db_operations)
+    
+    @staticmethod
+    def script_path() -> str:
+        return os.path.abspath(__file__)
 
     def get_raw_weather_data(self, date: str, location_lat_long: str = None) -> Optional[Dict]:
         """
@@ -222,6 +248,7 @@ def main():
         # Alternateive method calls if data for a specific date (or) date, location (lattitude and longitude) is required
         # get_weather_data.fetch_and_store_weather_data('2025-04-28',)
         # get_weather_data.fetch_and_store_weather_data('2025-04-28', '5.98,116.07')
+        print(get_weather_data.script_path())
     except Exception as e:
         logger.exception(f"An unexpected error occurred: {e}")
     finally:

@@ -6,3 +6,7 @@ weather/config.ini
 weather/.DS_Store
 terratium/.DS_Store
 aquarium/.DS_Store
+config.ini
+dist/
+vivarium_automation.egg-info/
+logs/

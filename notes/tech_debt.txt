@@ -1,0 +1,2 @@
+find a better way to add the root folder to sys.path insted of having to identify the absolute project root folder.
+    Refer to what was mentioned here "https://stackoverflow.com/questions/1893598/pythonpath-vs-sys-path"

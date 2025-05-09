@@ -1,6 +1,6 @@
 # src/database/hour_queries.py
-from src.database.database_operations import DatabaseOperations
-from src.database.condition_queries import ConditionQueries
+from weather.src.database.database_operations import DatabaseOperations
+from weather.src.database.condition_queries import ConditionQueries
 from typing import Dict, List, Optional
 
 class HourQueries(DatabaseOperations):

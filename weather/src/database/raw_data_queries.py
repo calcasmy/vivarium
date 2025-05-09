@@ -1,8 +1,8 @@
 # src/database/raw_data_queries.py
 import json
 from typing import Optional, Dict
-from src.utilities.logger import LogHelper
-from src.database.database_operations import DatabaseOperations
+from weather.src.utilities.logger import LogHelper
+from weather.src.database.database_operations import DatabaseOperations
 
 logger = LogHelper.get_logger(__name__)
 

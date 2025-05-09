@@ -1,11 +1,11 @@
 # src/database/forecast_queries.py
-from src.database.database_operations import DatabaseOperations
-from src.utilities.logger import LogHelper
+from weather.src.database.database_operations import DatabaseOperations
+from weather.src.utilities.logger import LogHelper
 from typing import Optional, Dict, List
-from src.database.day_queries import DayQueries
-from src.database.astro_queries import AstroQueries
-from src.database.hour_queries import HourQueries
-from src.database.condition_queries import ConditionQueries
+from weather.src.database.day_queries import DayQueries
+from weather.src.database.astro_queries import AstroQueries
+from weather.src.database.hour_queries import HourQueries
+from weather.src.database.condition_queries import ConditionQueries
 
 logger = LogHelper.get_logger(__name__)
 

@@ -3,7 +3,7 @@ import configparser
 import os
 
 # from src.utilities.path_utils import get_project_root
-from weather.src.utilities.path_utils import PathUtils
+from utilities.src.path_utils import PathUtils
 
 class Config:
     """
