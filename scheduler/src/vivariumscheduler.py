@@ -21,7 +21,7 @@ from utilities.src.config import Config
 from utilities.src.path_utils import PathUtils
 
 from weather.fetch_daily_weather import FetchDailyWeather
-from terrarium.src.terrariumstatus import TerrariumStatus
+from terrarium.src.controllers.terrarium_status import TerrariumStatus
 # from terrarium.src
 
 logger = LogHelper.get_logger(__name__)
