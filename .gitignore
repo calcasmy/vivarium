@@ -1,4 +1,4 @@
-vivaenv/
+.vivaenv/
 weather/rawfiles/
 weather/logs/
 weather/config.ini
@@ -10,3 +10,15 @@ config.ini
 dist/
 vivarium_automation.egg-info/
 logs/
+
+utilities/src/__pycache__/__init__.cpython-311.pyc
+utilities/src/__pycache__/config.cpython-311.pyc
+utilities/src/__pycache__/config.cpython-311.pyc
+weather/src/atmosphere/__pycache__/weather_api_client.cpython-311.pyc
+weather/src/atmosphere/__pycache__/__init__.cpython-311.pyc
+weather/src/__pycache__/__init__.cpython-311.pyc
+weather/__pycache__/fetch_daily_weather.cpython-311.pyc
+utilities/src/__pycache__/path_utils.cpython-311.pyc
+utilities/src/__pycache__/logger.cpython-311.pyc
+utilities/src/__pycache__/config.cpython-311.pyc
+utilities/src/__pycache__/__init__.cpython-311.pyc
