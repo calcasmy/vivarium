@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=61.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name                  = "vivarium-automation"  # A more general name for your project
+version               = "0.1.0"             # Start with a semantic version
+description           = "Automation scripts for a vivarium, including environmental control and data management."
+readme                = "README.md"         # Link to your project's main README
+requires-python       = ">=3.7"     # Minimum Python version your entire project supports
+license               = { file = "LICENSE" } # If you have a project-wide LICENSE file
+
+authors = [
+  { name = "Adithya", email = "technoatomic@gmail.com" },
+]
+maintainers = [
+  { name = "Adithya", email = "technoatomic@gmail.com" },  # Replace with your info
+]
+
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",  # Or your project's license
+  "Operating System :: OS Independent",
+  "Topic :: Home Automation",
+  "Topic :: Scientific/Engineering :: Atmospheric Science", # Or other relevant topics
+]
+
+[project.urls]
+"Homepage" = "https://github.com/calcasmy/Vivarium.git"
+"Bug Tracker" = "https://github.com/calcasmy/Vivarium/issues"
+
+[project.scripts]
+vivarium-scheduler = "scheduler.src.vivariumscheduler:main"  # Entry point for your scheduler
+vivarium-fetch-weather = "weather.src.fetch_daily_weather:main" # If you want a direct CLI for weather
+# Add other scripts if you have them (e.g., for terrarium control)
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["aquarium*", "assets*", "scheduler*", "terrarium*", "utilities*", "weather*"]
+exclude = ["vivaenv*"]
+
+[tool.setuptools.package-data]
+# If you have any non-Python files that need to be included in packages
+# "your_package_name" = ["data/*.txt", "config/*.ini"]

@@ -1,0 +1,58 @@
+import sys
+import os
+
+# Get the absolute path to the 'vivarium' directory (the parent of 'terrarium')
+vivarium_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+
+# Add 'vivarium' to the Python path if it's not already there
+if vivarium_path not in sys.path:
+    sys.path.insert(0, vivarium_path)
+
+from assets.humidifier.src import vesync
+from assets.humidifier.src.vesyncclassic300s import VeSyncHumidClassic300S
+
+
+
+# from pyvesync import vesync
+# from pyvesync.vesyncclassic300s import VeSyncHumidClassic300S
+# from pyvesync.vesyncfan import VeSyncHumid200300S
+
+# Replace with your VeSync account details
+USERNAME = "technoatomic@gmail.com"
+PASSWORD = "Cold_Snow#25"
+
+if __name__ == "__main__":
+    try:
+        manager = vesync.VeSync(USERNAME, PASSWORD)
+        login_success = manager.login()
+        if login_success:
+            print("Successfully logged into VeSync.")
+            manager.get_devices()
+            humidifier = None
+            for device in manager.fans:
+                if isinstance(device, VeSyncHumidClassic300S):
+                    humidifier = device
+                    break
+
+            if humidifier:
+                print(f"Found your Levoit Classic 300S: {humidifier.device_name}")
+
+                # Example control actions:
+                humidifier.turn_on()
+                print("Turned on the humidifier.")
+                humidifier.set_mist_level(10)
+                print("Set mist level to 5.")
+                humidifier.set_humidity_mode("auto")
+                print("Set mode to auto.")
+                # ... more actions ...
+                humidifier.turn_off()
+                print("Turned off the humidifier.")
+
+            else:
+                print("Could not find a Levoit Classic 300S humidifier.")
+
+        else:
+            print("Login to VeSync failed.")
+
+    except Exception as e:
+        print(f"An error occurred: {e}")

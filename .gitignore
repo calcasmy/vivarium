@@ -1,0 +1,16 @@
+.vivaenv/
+weather/rawfiles/
+weather/logs/
+weather/config.ini
+.DS_Store
+weather/.DS_Store
+terratium/.DS_Store
+aquarium/.DS_Store
+config.ini
+dist/
+vivarium_automation.egg-info/
+logs/
+*.pyc
+._.DS_Store
+notes/tech_debt.txt
+notes/
