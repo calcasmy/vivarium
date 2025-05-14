@@ -16,7 +16,7 @@ from utilities.src.config import TimeConfig
 from utilities.src.logger import LogHelper
 
 from terrarium.src.database.device_queries import DeviceQueries
-from terrarium.src.database.status_queries import StatusQueries
+from terrarium.src.database.device_status_queries import StatusQueries
 from terrarium.src.controllers.light_controller import LightControler
 from terrarium.src.controllers.mister_controller import MisterController
 
