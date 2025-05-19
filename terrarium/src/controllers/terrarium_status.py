@@ -15,8 +15,10 @@ from datetime import datetime, timedelta
 from utilities.src.config import TimeConfig
 from utilities.src.logger import LogHelper
 
-from terrarium.src.database.device_queries import DeviceQueries
-from terrarium.src.database.device_status_queries import StatusQueries
+from terrarium.src.database.device_queries import DevicesQueries
+from terrarium.src.database.device_status_queries import DeviceStatusQueries
+from terrarium.src.database.sensor_queries import SensorsQueries
+from terrarium.src.database.sensor_data_queries import SensorDataQueries
 from terrarium.src.controllers.light_controller import LightControler
 from terrarium.src.controllers.mister_controller import MisterController
 

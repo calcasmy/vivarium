@@ -21,11 +21,7 @@ CREATE TABLE public.sensor_readings (
     reading_id BIGSERIAL PRIMARY KEY,
     sensor_id INT NOT NULL,
     timestamp TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-    humidity DECIMAL(5, 2),
-    temperature_celsius DECIMAL(5, 2),
-    light_level_lux INT,
-    other_value DECIMAL(10, 2),
-    other_unit VARCHAR(50),
+    raw_data JSONB,
     FOREIGN KEY (sensor_id) REFERENCES sensors(sensor_id)
 );
 
@@ -34,6 +30,8 @@ CREATE INDEX idx_sensor_readings_sensor_id ON sensor_readings (sensor_id);
 
 -- Index on timestamp for efficient querying of readings by time
 CREATE INDEX idx_sensor_readings_timestamp ON sensor_readings (timestamp);
+
+CREATE INDEX idx_raw_data_temperature ON sensor_readings USING gin ((raw_data -> 'temperature'));
 
 
 -- Devices Table
@@ -58,9 +56,7 @@ CREATE TABLE public.device_status (
     device_id INT NOT NULL,
     timestamp TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     is_on BOOLEAN NOT NULL,
-    rpm INT,
-    level DECIMAL(5, 2),
-    setting VARCHAR(100),
+    device_data JSONB,
     FOREIGN KEY (device_id) REFERENCES devices(device_id)
 );
 
@@ -69,3 +65,7 @@ CREATE INDEX idx_device_status_device_id ON device_status (device_id);
 
 -- Index on timestamp for efficient querying of status changes over time
 CREATE INDEX idx_device_status_timestamp ON device_status (timestamp);
+
+
+INSERT INTO public.sensors (sensor_name, sensor_type, location, model, date_installed)
+VALUES ('Adafruit HTU21D-F', 'Temperature/Humidity Sensor', 'terrarium', 'Adafruit HTU21D-F', '2024-04-01');

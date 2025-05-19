@@ -164,7 +164,7 @@ class VivariumScheduler:
                     # Schedule light ON at sunrise
 
                     self.scheduler.add_job(
-                        self.run_light_control,
+                        self._run_light_control,
                         'date',  # Use the 'date' trigger
                         run_date=datetime.now(), # Set the run date to the current time
                         args=['on'],
@@ -187,7 +187,7 @@ class VivariumScheduler:
 
                     # Schedule light OFF at sunset
                     self.scheduler.add_job(
-                        self.run_light_control,
+                        self._run_light_control,
                         'cron',
                         hour=sunset_time.hour,
                         minute=sunset_time.minute,
@@ -207,7 +207,7 @@ class VivariumScheduler:
         except Exception as e:
             logger.error(f"Error updating devices: {e}")
 
-    def run_light_control(self, action):
+    def _run_light_control(self, action):
         light_control_script = LightControler.script_path()
         logger.info(f"Running light control: {action}")
         try:
