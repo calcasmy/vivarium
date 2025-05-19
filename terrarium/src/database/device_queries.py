@@ -1,7 +1,7 @@
 from utilities.src.database_operations import DatabaseOperations
 from typing import Dict, Optional, List, Tuple
 
-class DevicesQueries(DatabaseOperations):
+class DeviceQueries(DatabaseOperations):
     def __init__(self, db_operations: DatabaseOperations):
         super().__init__(
             dbname=db_operations.dbname,

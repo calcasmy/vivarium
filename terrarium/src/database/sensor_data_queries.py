@@ -1,25 +1,50 @@
-from utilities.src.database_operations import DatabaseOperations
-from typing import Dict, Optional, List, Tuple
+from typing import Dict, Optional, List
+from utilities.src.database_operations import DatabaseOperations  # Assuming this is where DatabaseOperations is defined.
 
 class SensorDataQueries(DatabaseOperations):
-    def __init__(self, db_operations: DatabaseOperations):
-        super().__init__(
-            dbname=db_operations.dbname,
-            user=db_operations.user,
-            password=db_operations.password,
-            host=db_operations.host,
-            port=db_operations.port
-        )
-        self.conn = self.get_connection()
+    """
+    This class provides methods to interact with the sensor_readings table in the database.
+    The table schema is defined as:
+    CREATE TABLE public.sensor_readings (
+        reading_id bigserial NOT NULL,
+        sensor_id int4 NOT NULL,
+        "timestamp" timestamp NOT NULL,
+        raw_data jsonb NULL,
+        CONSTRAINT sensor_readings_pkey PRIMARY KEY (reading_id)
+    );
+    """
 
-    def insert_sensor_reading(self, sensor_id: int, timestamp: str, humidity: Optional[float] = None, temperature_celsius: Optional[float] = None, light_level_lux: Optional[int] = None, other_value: Optional[float] = None, other_unit: Optional[str] = None) -> Optional[int]:
-        """Inserts a new sensor reading and returns its ID."""
+    def __init__(self, db_operations: DatabaseOperations):
+        """
+        Initializes the SensorDataQueries object.
+
+        Args:
+            db_operations (DatabaseOperations): An instance of the DatabaseOperations class,
+                which provides the database connection details.
+        """
+        super().__init__()
+        self.conn = db_operations.get_connection()
+
+    def insert_sensor_reading(self, sensor_id: int, timestamp: str, raw_data: Optional[dict] = None) -> Optional[int]:
+        """
+        Inserts a new sensor reading into the sensor_readings table.
+
+        Args:
+            sensor_id (int): The ID of the sensor.
+            timestamp (str): The timestamp of the reading.
+            raw_data (Optional[dict]): A dictionary containing the raw sensor data
+                (e.g., humidity, temperature, light level).  This will be stored as a JSONB object.
+                If None, it will insert NULL into the raw_data column.
+
+        Returns:
+            Optional[int]: The ID of the newly inserted reading, or None on failure.
+        """
         query = """
-            INSERT INTO public.sensor_readings (sensor_id, timestamp, humidity, temperature_celsius, light_level_lux, other_value, other_unit)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO public.sensor_readings (sensor_id, timestamp, raw_data)
+            VALUES (%s, %s, %s)
             RETURNING reading_id;
         """
-        params = (sensor_id, timestamp, humidity, temperature_celsius, light_level_lux, other_value, other_unit)
+        params = (sensor_id, timestamp, raw_data)
         result = self.execute_query(query, params, fetchone=True)
         if result:
             return result[0]
@@ -27,9 +52,21 @@ class SensorDataQueries(DatabaseOperations):
             return None
 
     def get_readings_by_sensor(self, sensor_id: int, limit: Optional[int] = None) -> Optional[List[Dict]]:
-        """Retrieves readings for a specific sensor, optionally with a limit."""
+        """
+        Retrieves readings for a specific sensor.
+
+        Args:
+            sensor_id (int): The ID of the sensor.
+            limit (Optional[int]): The maximum number of readings to retrieve.
+                If None, all readings for the sensor are retrieved.
+
+        Returns:
+            Optional[List[Dict]]: A list of dictionaries, where each dictionary
+                represents a sensor reading.  Returns None if no readings are found.
+                The dictionary includes 'reading_id', 'sensor_id', 'timestamp', and 'raw_data'.
+        """
         query = """
-            SELECT reading_id, sensor_id, timestamp, humidity, temperature_celsius, light_level_lux, other_value, other_unit
+            SELECT reading_id, sensor_id, timestamp, raw_data
             FROM public.sensor_readings
             WHERE sensor_id = %s
             ORDER BY timestamp DESC
@@ -39,16 +76,27 @@ class SensorDataQueries(DatabaseOperations):
         results = self.execute_query(query, params, fetch=True)
         if results:
             return [
-                {'reading_id': row[0], 'sensor_id': row[1], 'timestamp': row[2], 'humidity': row[3], 'temperature_celsius': row[4], 'light_level_lux': row[5], 'other_value': row[6], 'other_unit': row[7]}
+                {'reading_id': row[0], 'sensor_id': row[1], 'timestamp': row[2], 'raw_data': row[3]}
                 for row in results
             ]
         else:
             return None
 
     def get_readings_by_time_range(self, start_time: str, end_time: str) -> Optional[List[Dict]]:
-        """Retrieves readings within a specific time range."""
+        """
+        Retrieves sensor readings within a specified time range.
+
+        Args:
+            start_time (str): The start timestamp for the query.
+            end_time (str): The end timestamp for the query.
+
+        Returns:
+            Optional[List[Dict]]: A list of dictionaries, where each dictionary
+                represents a sensor reading. Returns None if no readings are found.
+                The dictionary includes  'reading_id', 'sensor_id', 'timestamp', and 'raw_data'.
+        """
         query = """
-            SELECT reading_id, sensor_id, timestamp, humidity, temperature_celsius, light_level_lux, other_value, other_unit
+            SELECT reading_id, sensor_id, timestamp, raw_data
             FROM public.sensor_readings
             WHERE timestamp BETWEEN %s AND %s
             ORDER BY timestamp;
@@ -57,7 +105,7 @@ class SensorDataQueries(DatabaseOperations):
         results = self.execute_query(query, params, fetch=True)
         if results:
             return [
-                {'reading_id': row[0], 'sensor_id': row[1], 'timestamp': row[2], 'humidity': row[3], 'temperature_celsius': row[4], 'light_level_lux': row[5], 'other_value': row[6], 'other_unit': row[7]}
+                {'reading_id': row[0], 'sensor_id': row[1], 'timestamp': row[2], 'raw_data': row[3]}
                 for row in results
             ]
         else:

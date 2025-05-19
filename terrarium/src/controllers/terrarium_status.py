@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 from utilities.src.config import TimeConfig
 from utilities.src.logger import LogHelper
 
-from terrarium.src.database.device_queries import DevicesQueries
+from terrarium.src.database.device_queries import DeviceQueries
 from terrarium.src.database.device_status_queries import DeviceStatusQueries
 from terrarium.src.database.sensor_queries import SensorsQueries
 from terrarium.src.database.sensor_data_queries import SensorDataQueries
@@ -112,7 +112,7 @@ def send_temperature(temp: float, host: str = DEFAULT_HOST, port: int = DEFAULT_
         logger.error("Error sending temperature: %s", e, exc_info=True)
 
 
-def log_sensor_data():
+def log_sensor_data(self):
     """
     Fetches sensor data, logs it, saves it to the database, and controls the mister.
     """
@@ -138,6 +138,27 @@ def log_sensor_data():
         # Retrieve data from the queue
         if not queue.empty():
             temperature, humidity = queue.get() #Fetch data from queue
+            # Convert temperature to Fahrenheit
+            temperature_fahrenheit = (temperature * 9 / 5) + 32
+            #  Create the raw_data dictionary.
+            raw_data = {
+                "temperature_celsius": temperature,
+                "temperature_fahrenheit": temperature_fahrenheit,
+                "humidity": humidity,
+                #  Add other sensor readings here as needed
+            }
+            # Get the current timestamp in ISO 8601 format
+            timestamp = datetime.datetime.now().isoformat()
+
+            # Fetch sensor ID by name
+            sensor_info = SensorsQueries.get_sensor_by_id(self.sensor)
+
+            if isinstance(sensor_info, dict) and "sensor_id" in sensor_info:
+                sensor_id =  sensor_info["sensor_id"]
+            else:
+                sensor_id = 1
+
+            SensorDataQueries.insert_sensor_reading(sensor_id, timestamp, raw_data)
 
             # DeviceQueries.put_temp_humidity_data(humidity, temperature)
             log_message = (

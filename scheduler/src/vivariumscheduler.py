@@ -36,7 +36,6 @@ from terrarium.src.controllers.humidifier_control import HumidiferController
 # logger = LogHelper.get_logger(__name__)
 logger = LogHelper.get_logger("Vivarium_Scheduler")
 
-
 class VivariumScheduler:
     '''
         Scheduler class for all vivarium [Aquarium, Terrarium etc.] related jobs
@@ -61,12 +60,11 @@ class VivariumScheduler:
         elif event.job_id == 'fetch_weather_daily_now':
             logger.info(f"Job {event.job_id} successfully finished.")
             # Immediately run the schedule_lights job
-            self.schedule_lights()
+            # :: Temply commented
+            # self.schedule_lights()
 
     def schedule_jobs(self):
-
         # Weather API related Jobs
-
         # Schedule fetch_daily_weather.py to run RIGHT NOW
         fetch_weather_script = FetchDailyWeather.script_path()
         self.scheduler.add_job(
@@ -78,6 +76,7 @@ class VivariumScheduler:
         logger.info(f"Scheduled {os.path.basename(fetch_weather_script)} to run immediately.")
 
         # Schedule fetch_daily_weather.py to run once a day at 1:00 AM
+        # :: Temply commented
         # fetch_weather_script = FetchDailyWeather.script_path()
         # self.scheduler.add_job(
         #     self.run_script, 
