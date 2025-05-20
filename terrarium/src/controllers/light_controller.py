@@ -1,6 +1,7 @@
 import os
 import sys
-import RPi.GPIO as GPIO
+# import RPi.GPIO as GPIO
+import gpiod
 
 # Get the absolute path to the 'vivarium' directory
 vivarium_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))

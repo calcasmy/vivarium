@@ -61,19 +61,19 @@ class VivariumScheduler:
             logger.info(f"Job {event.job_id} successfully finished.")
             # Immediately run the schedule_lights job
             # :: Temply commented
-            # self.schedule_lights()
+            self.schedule_lights()
 
     def schedule_jobs(self):
         # Weather API related Jobs
         # Schedule fetch_daily_weather.py to run RIGHT NOW
-        # fetch_weather_script = FetchDailyWeather.script_path()
-        # self.scheduler.add_job(
-        #     self.run_script,
-        #     'date',  # Use the 'date' trigger
-        #     run_date=datetime.now(), # Set the run date to the current time
-        #     args=[fetch_weather_script],
-        #     id='fetch_weather_daily_now')
-        # logger.info(f"Scheduled {os.path.basename(fetch_weather_script)} to run immediately.")
+        fetch_weather_script = FetchDailyWeather.script_path()
+        self.scheduler.add_job(
+            self.run_script,
+            'date',  # Use the 'date' trigger
+            run_date=datetime.now(), # Set the run date to the current time
+            args=[fetch_weather_script],
+            id='fetch_weather_daily_now')
+        logger.info(f"Scheduled {os.path.basename(fetch_weather_script)} to run immediately.")
 
         # Schedule fetch_daily_weather.py to run once a day at 1:00 AM
         # :: Temply commented
@@ -97,15 +97,17 @@ class VivariumScheduler:
         #     id='update_devices_astro')
         # logger.info("Scheduled device update based on astro data shortly after weather fetch.")
 
+        # :: Temply commented
         # Schedule currentstatus.py to run every 5 minutes
-        terrarium_status_script = TerrariumStatus.script_path()
-        self.scheduler.add_job(
-            self.run_script, 
-            'interval', 
-            seconds=30, 
-            args=[terrarium_status_script], 
-            id='run_current_status')
-        logger.info(f"Scheduled {os.path.basename(terrarium_status_script)} to run every 5 minutes.")
+        # terrarium_status_script = TerrariumStatus.script_path()
+        # self.scheduler.add_job(
+        #     self.run_script, 
+        #     'interval', 
+        #     minute=5, 
+        #     # seconds=30, 
+        #     args=[terrarium_status_script], 
+        #     id='run_current_status')
+        # logger.info(f"Scheduled {os.path.basename(terrarium_status_script)} to run every 5 minutes.")
 
         '''.................................................'''
 
@@ -171,7 +173,7 @@ class VivariumScheduler:
                     )
                     logger.info(f"Scheduled lights ON at {sunrise_time.strftime('%H:%M:%S')}.")
 
-
+                    # :: Temply commented
                     # self.scheduler.add_job(
                     #     self.run_light_control,
                     #     'cron',
@@ -184,17 +186,18 @@ class VivariumScheduler:
                     # )
                     # logger.info(f"Scheduled lights ON at {sunrise_time.strftime('%H:%M:%S')}.")
 
+                    # :: Temply commented
                     # Schedule light OFF at sunset
-                    self.scheduler.add_job(
-                        self._run_light_control,
-                        'cron',
-                        hour=sunset_time.hour,
-                        minute=sunset_time.minute,
-                        second=sunset_time.second,
-                        args=['off'],
-                        id='lights_off_sunset',
-                        replace_existing=True
-                    )
+                    # self.scheduler.add_job(
+                    #     self._run_light_control,
+                    #     'cron',
+                    #     hour=sunset_time.hour,
+                    #     minute=sunset_time.minute,
+                    #     second=sunset_time.second,
+                    #     args=['off'],
+                    #     id='lights_off_sunset',
+                    #     replace_existing=True
+                    # )
                     logger.info(f"Scheduled lights OFF at {sunset_time.strftime('%H:%M:%S')}.")
 
                 except ValueError as e:
@@ -241,7 +244,7 @@ class VivariumScheduler:
 
         try:
             while True:
-                time.sleep(60 * 5)  # Check for shutdown every 5 minutes
+                time.sleep(30 * 1)  # Check for shutdown every 5 minutes
         except (KeyboardInterrupt, SystemExit):
             logger.info("Vivarium Scheduler stopping...")
             self.scheduler.shutdown()

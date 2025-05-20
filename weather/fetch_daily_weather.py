@@ -233,7 +233,7 @@ def main():
         get_weather_data.fetch_and_store_weather_data()
         # Alternateive method calls if data for a specific date (or) date, location (lattitude and longitude) is required
         # get_weather_data.fetch_and_store_weather_data('2025-04-28',)
-        # get_weather_data.fetch_and_store_weather_data('2025-04-28', '5.98,116.07')
+        # get_weather_data.fetch_and_store_weather_data('2025-05-18', '5.98,116.07')
     except Exception as e:
         logger.exception(f"An unexpected error occurred: {e}")
     finally:
