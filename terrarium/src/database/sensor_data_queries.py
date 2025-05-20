@@ -45,7 +45,7 @@ class SensorDataQueries(DatabaseOperations):
             RETURNING reading_id;
         """
         params = (sensor_id, timestamp, raw_data)
-        result = self.execute_query(query, params, fetchone=True)
+        result = self.execute_query(query, params, fetch=True)
         if result:
             return result[0]
         else:

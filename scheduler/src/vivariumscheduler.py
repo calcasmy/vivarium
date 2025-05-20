@@ -66,14 +66,14 @@ class VivariumScheduler:
     def schedule_jobs(self):
         # Weather API related Jobs
         # Schedule fetch_daily_weather.py to run RIGHT NOW
-        fetch_weather_script = FetchDailyWeather.script_path()
-        self.scheduler.add_job(
-            self.run_script,
-            'date',  # Use the 'date' trigger
-            run_date=datetime.now(), # Set the run date to the current time
-            args=[fetch_weather_script],
-            id='fetch_weather_daily_now')
-        logger.info(f"Scheduled {os.path.basename(fetch_weather_script)} to run immediately.")
+        # fetch_weather_script = FetchDailyWeather.script_path()
+        # self.scheduler.add_job(
+        #     self.run_script,
+        #     'date',  # Use the 'date' trigger
+        #     run_date=datetime.now(), # Set the run date to the current time
+        #     args=[fetch_weather_script],
+        #     id='fetch_weather_daily_now')
+        # logger.info(f"Scheduled {os.path.basename(fetch_weather_script)} to run immediately.")
 
         # Schedule fetch_daily_weather.py to run once a day at 1:00 AM
         # :: Temply commented

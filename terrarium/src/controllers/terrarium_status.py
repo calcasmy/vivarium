@@ -1,9 +1,11 @@
 import os
 import sys
+import json
 import board
 import socket
 import multiprocessing
 from adafruit_htu21d import HTU21D
+from typing import Optional, List, Dict
 
 if __name__ == "__main__":
     vivarium_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..' ))
@@ -14,6 +16,7 @@ if __name__ == "__main__":
 from datetime import datetime, timedelta
 from utilities.src.config import TimeConfig
 from utilities.src.logger import LogHelper
+from utilities.src.database_operations import DatabaseOperations
 
 from terrarium.src.database.device_queries import DeviceQueries
 from terrarium.src.database.device_status_queries import DeviceStatusQueries
@@ -21,8 +24,6 @@ from terrarium.src.database.sensor_queries import SensorsQueries
 from terrarium.src.database.sensor_data_queries import SensorDataQueries
 from terrarium.src.controllers.light_controller import LightControler
 from terrarium.src.controllers.mister_controller import MisterController
-
-# from Fan_Final import FanController #Removed import.
 
 # Global class variables (initialize only once)
 # logger = LogHelper.get_logger(__name__)
@@ -53,6 +54,7 @@ class TerrariumStatus:
         try:
             self.i2c = board.I2C()  # Uses board.SCL and board.SDA
             self.sensor = HTU21D(self.i2c)
+            self.sensor_name = 'HTU21D'
         except Exception as e:
             logger.error("Failed to initialize sensor: %s", e, exc_info=True)
             raise  # Re-raise to be caught by the main process
@@ -66,7 +68,8 @@ class TerrariumStatus:
         '''Returns the Absolute path of the script'''
         return os.path.abspath(__file__)
 
-    def fetch_data(self) -> tuple[float, float]:
+    # def fetch_data(self) -> tuple[float, float]:
+    def fetch_data(self) -> Optional[List[Dict]]:
         """
         Fetches temperature and humidity data from the HTU21D sensor.
 
@@ -77,17 +80,20 @@ class TerrariumStatus:
             Exception: If there is an error reading from the sensor.
         """
         try:
-            temperature_celsius = self.sensor.temperature
-            humidity_percentage = self.sensor.relative_humidity
+            temp_c = self.sensor.temperature
+            humidity_p = self.sensor.relative_humidity
 
-            temperature_fahrenheit = (temperature_celsius * 9 / 5) + 32
+            temp_f = (temp_c * 9 / 5) + 32
 
             logger.debug(
                 "Raw sensor data: Temperature: %.2f\u00B0C, Humidity: %.2f%%",
-                temperature_celsius,
-                humidity_percentage,
+                temp_c,
+                humidity_p,
             )
-            return temperature_fahrenheit, humidity_percentage
+            return {
+                'temperature_fahrenheit' : round(temp_f, 2), 
+                'temperature_celsius' : round(temp_c, 2),
+                'humidity_percentage' : round(humidity_p, 2)}
         except Exception as e:
             error_message = "Error fetching data from sensor: %s"
             logger.error(error_message, e, exc_info=True)
@@ -112,11 +118,13 @@ def send_temperature(temp: float, host: str = DEFAULT_HOST, port: int = DEFAULT_
         logger.error("Error sending temperature: %s", e, exc_info=True)
 
 
-def log_sensor_data(self):
+def log_sensor_data(db_operations):
     """
     Fetches sensor data, logs it, saves it to the database, and controls the mister.
     """
     queue = multiprocessing.Queue() # Create a Queue for communication
+    sensor_fetcher = TerrariumStatus()
+    
 
     try:
         process = multiprocessing.Process(
@@ -137,33 +145,33 @@ def log_sensor_data(self):
 
         # Retrieve data from the queue
         if not queue.empty():
-            temperature, humidity = queue.get() #Fetch data from queue
-            # Convert temperature to Fahrenheit
-            temperature_fahrenheit = (temperature * 9 / 5) + 32
+            sensor_data = queue.get() #Fetch data from queue
             #  Create the raw_data dictionary.
-            raw_data = {
-                "temperature_celsius": temperature,
-                "temperature_fahrenheit": temperature_fahrenheit,
-                "humidity": humidity,
-                #  Add other sensor readings here as needed
-            }
+            # raw_data = {
+            #     "temperature_celsius": temperature,
+            #     "temperature_fahrenheit": temperature_fahrenheit,
+            #     "humidity": humidity,
+            #     #  Add other sensor readings here as needed
+            # }
+            raw_data = json.dumps(sensor_data)
             # Get the current timestamp in ISO 8601 format
-            timestamp = datetime.datetime.now().isoformat()
-
+            timestamp = datetime.now().isoformat()
             # Fetch sensor ID by name
-            sensor_info = SensorsQueries.get_sensor_by_id(self.sensor)
+            sensor_queries = SensorsQueries(db_operations)
+            sensor_data_queries = SensorDataQueries(db_operations)
+            # sensor_details = sensor_info.get_sensor_by_name(sensor_name='HTU21D')
+            sensor_details = sensor_queries.get_sensor_by_name(sensor_fetcher.sensor_name)
 
-            if isinstance(sensor_info, dict) and "sensor_id" in sensor_info:
-                sensor_id =  sensor_info["sensor_id"]
+            if isinstance(sensor_details, dict) and "sensor_id" in sensor_details:
+                sensor_id =  sensor_details["sensor_id"]
             else:
                 sensor_id = 1
+            
+            sensor_data_queries.insert_sensor_reading(sensor_id, timestamp, raw_data)
 
-            SensorDataQueries.insert_sensor_reading(sensor_id, timestamp, raw_data)
-
-            # DeviceQueries.put_temp_humidity_data(humidity, temperature)
             log_message = (
-                f"Processed and persisted sensor data: Temperature: {temperature:.2f}{TEMPERATURE_UNIT}, "
-                f"Humidity: {humidity:.2f}%"
+                f"Processed and persisted sensor data: Temperature: {sensor_data['temperature_fahrenheit']:.2f}{TEMPERATURE_UNIT}, "
+                f"Humidity: {sensor_data['humidity_percentage']:.2f}%"
             )
             logger.info(log_message)
 
@@ -190,8 +198,8 @@ def fetch_sensor_data_process(queue: multiprocessing.Queue):
     """
     try:
         sensor_fetcher = TerrariumStatus()
-        temperature, humidity = sensor_fetcher.fetch_data()
-        queue.put((temperature, humidity))
+        sensor_data = sensor_fetcher.fetch_data()
+        queue.put(sensor_data)
     except Exception:
         # Log the error within the subprocess.  The parent process is responsible
         # for handling the timeout and deciding whether to terminate.  We log
@@ -203,7 +211,10 @@ def fetch_sensor_data_process(queue: multiprocessing.Queue):
 
 def main():
     """Main entry point of the script."""
-    log_sensor_data()
+    db_operations = DatabaseOperations()
+    db_operations.connect
+
+    log_sensor_data(db_operations)
 
 
 if __name__ == "__main__":
