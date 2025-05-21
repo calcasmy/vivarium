@@ -1,8 +1,6 @@
 import os
 import sys
-# import RPi.GPIO as GPIO
 import gpiod
-
 # Get the absolute path to the 'vivarium' directory
 vivarium_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
@@ -33,24 +31,55 @@ class LightControler:
         """
         self.equipment_id = equipment_id
         self.relay_pin = int(gpio_config.light_control_pin)  # Get pin from config
+        self.chip = None
+        self.line = None
         self._setup_gpio()
         self.dao = DeviceQueries() #instanciating DB Queries
+
+    def __del__(self):
+        """
+        Ensures the GPIO line is released when the object is destroyed.
+        """
+        if self.line:
+            try:
+                self.line.release()
+                logger.info(f"GPIO line {self.relay_pin} released.")
+            except gpiod.LineError as e:
+                logger.error(f"Error releasing GPIO line {self.relay_pin}: {e}")
+        if self.chip:
+            try:
+                self.chip.close()
+                logger.info(f"GPIO chip closed.")
+            except Exception as e:
+                logger.error(f"Error closing GPIO chip: {e}")
 
     @staticmethod
     def script_path() -> str:
         '''Returns the Absolute path of the script'''
         return os.path.abspath(__file__)
 
-    def _setup_gpio(self):  # Make this method private
-        """
-        Sets up the GPIO pin for controlling the light.
-        This method should only be called internally.
-        """
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setwarnings(False)
-        GPIO.setup(self.relay_pin, GPIO.OUT)
+    def _setup_gpio(self):  # Private method
+        """Sets up the GPIO pin for controlling the light."""
 
-    def _get_status(self):
+        try:
+            # Open the GPIO chip, typically 'gpiochip0' on Raspberry Pi and similar boards
+            # You might need to adjust this depending on your specific hardware.
+            self.chip = gpiod.Chip('gpiochip0')
+            self.line = self.chip.get_line(self.relay_pin)
+
+            # Request the line as output
+            # Pass consumer='light_control' for better debugging with gpiodetect/gpioinfo
+            self.line.request(consumer='light_control', type=gpiod.LINE_REQ_DIR_OUT)
+            logger.info(f"GPIO line {self.relay_pin} configured as output.")
+
+        except gpiod.ChipError as e:
+            logger.error(f"Failed to open GPIO chip or get line: {e}")
+            sys.exit(1)  # Exit if GPIO setup fails, as light control won't work
+        except Exception as e:
+            logger.error(f"An unexpected error occurred during GPIO setup: {e}")
+            sys.exit(1)
+
+    def _get_status(self): # Private method
         """
         Fetches the current status of the light from the database.
 
@@ -61,7 +90,7 @@ class LightControler:
             Exception: If there's an error fetching the status.
         """
         try:
-            return self.dao.getStatus(self.equipment_id, 'p')
+            return self.dao.getStatus(self.equipment_id, 'p') # Call requires refactoring
         except Exception as e:
             error_message = f"Failed to get status for {self.equipment_id}: {e}"
             logger.error(error_message)
@@ -79,7 +108,7 @@ class LightControler:
             Exception: If there's an error updating the status.
         """
         try:
-            self.dao.putStatus(self.equipment_id, status)
+            self.dao.putStatus(self.equipment_id, status) # Call requires refactoring.
         except Exception as e:
             error_message = f"Failed to update status for {self.equipment_id}: {e}"
             logger.error(error_message)
@@ -92,20 +121,41 @@ class LightControler:
         Args:
             action (str): The desired action ('on' or 'off').
         """
+
+        if not self.line:
+            logger.error("GPIO line not initialized. Cannot control light.")
+            return
         try:
             if action.lower() == 'on':
-                GPIO.output(self.relay_pin, GPIO.HIGH)  # Turn on (inverted logic)
-                self._update_status(True, 'p')
+                self.line.set_value(1)  # Turn on (HIGH)
+                self._update_status(True)
                 logger.info("Vivarium grow lights turned ON")
             elif action.lower() == 'off':
-                GPIO.output(self.relay_pin, GPIO.LOW)  # Turn off (inverted logic)
-                self._update_status(False, 'p')
+                self.line.set_value(0)  # Turn off (LOW)
+                self._update_status(False)
                 logger.info("Vivarium grow lights turned OFF")
             else:
                 logger.warning(f"Invalid light control action: '{action}'. Must be 'on' or 'off'.")
 
-        except Exception as e:  # Catch exceptions from GPIO and database operations
-            logger.error(f'An error occurred while controlling the lights: {e}')
+        except gpiod.LineError as e:
+            logger.error(f'An error occurred while controlling GPIO line {self.relay_pin}: {e}')
+        except Exception as e:  # Catch exceptions from database operations
+            logger.error(f'An error occurred while controlling the lights or updating database: {e}')
+        #
+        # try:
+        #     if action.lower() == 'on':
+        #         GPIO.output(self.relay_pin, GPIO.HIGH)  # Turn on (inverted logic)
+        #         self._update_status(True, 'p')
+        #         logger.info("Vivarium grow lights turned ON")
+        #     elif action.lower() == 'off':
+        #         GPIO.output(self.relay_pin, GPIO.LOW)  # Turn off (inverted logic)
+        #         self._update_status(False, 'p')
+        #         logger.info("Vivarium grow lights turned OFF")
+        #     else:
+        #         logger.warning(f"Invalid light control action: '{action}'. Must be 'on' or 'off'.")
+        #
+        # except Exception as e:  # Catch exceptions from GPIO and database operations
+        #     logger.error(f'An error occurred while controlling the lights: {e}')
 
 
     # def control_light(self):
@@ -134,7 +184,7 @@ def main(action):
     """
     Main function to create and run the LightControl.
     """
-    light_controller = LightControler()  # No need to pass 'l' again, it is default
+    light_controller = LightControler()
     light_controller.control_light(action)
 
 if __name__ == "__main__":

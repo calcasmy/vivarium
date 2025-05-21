@@ -3,14 +3,8 @@ from typing import Dict, Optional, List, Tuple
 
 class DeviceQueries(DatabaseOperations):
     def __init__(self, db_operations: DatabaseOperations):
-        super().__init__(
-            dbname=db_operations.dbname,
-            user=db_operations.user,
-            password=db_operations.password,
-            host=db_operations.host,
-            port=db_operations.port
-        )
-        self.conn = self.get_connection()
+        super().__init__()
+        self.conn = db_operations.get_connection()
 
     def insert_device(self, device_name: str, device_type: str, location: Optional[str] = None, model: Optional[str] = None, date_added: Optional[str] = None) -> Optional[int]:
         """Inserts a new device and returns its ID."""
@@ -20,7 +14,7 @@ class DeviceQueries(DatabaseOperations):
             RETURNING device_id;
         """
         params = (device_name, device_type, location, model, date_added)
-        result = self.execute_query(query, params, fetchone=True)
+        result = self.execute_query(query, params, fetch=True)
         if result:
             return result[0]
         else:
@@ -34,7 +28,7 @@ class DeviceQueries(DatabaseOperations):
             WHERE device_id = %s;
         """
         params = (device_id,)
-        result = self.execute_query(query, params, fetchone=True)
+        result = self.execute_query(query, params, fetch=True)
         if result:
             return {
                 'device_id': result[0],
@@ -55,7 +49,7 @@ class DeviceQueries(DatabaseOperations):
             WHERE device_name = %s;
         """
         params = (device_name,)
-        result = self.execute_query(query, params, fetchone=True)
+        result = self.execute_query(query, params, fetch=True)
         if result:
             return {
                 'device_id': result[0],
