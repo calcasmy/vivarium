@@ -1,0 +1,34 @@
+If git init, then add remote repository.
+    git remote add origin your_remote_repo_url
+        Replace your_remote_repo_url with the actual HTTPS or SSH URL of your Git repository 
+        (e.g., https://github.com/your_username/your_project.git or 
+        git@github.com:your_username/your_project.git).
+
+    Note: If you previously tried to add origin and encountered an error like "remote origin already exists", you can either:
+        Remove the old remote first: git remote remove origin
+        Or, if you just want to update its URL: git remote set-url origin your_remote_repo_url
+
+    Pull existing code from remote
+        git pull origin main # Or 'master', depending on your remote's primary branch name
+
+    Finally, verify git status
+        git status
+
+Else if not git init, then git clone.
+    git clone https://github.com/someuser/my-amazing-project.git
+
+    It creates a new directory (named after the repository by default) and downloads all the files and the entire history of the project into it.
+    It automatically initializes a local Git repository within that new directory.
+    Crucially, it automatically sets up a "remote" connection named origin that points back to the URL you cloned from. 
+        This means you can immediately start using git pull origin main (or master) to get updates and git push origin main to send your changes back.
+
+After the initial setup, daily workflow will typically involve:
+
+Making changes to your code.
+    git add . (to stage changes).
+    git commit -m "Your descriptive commit message" (to save changes to your local history).
+    git pull (to get any new changes from the remote that others might have pushed, and merge them with your local changes, avoiding conflicts).
+    git push (to send your combined changes up to the remote).
+
+The subsequent pull and push commands operate the same way, regardless of whether the repository was initially created with git clone 
+or by initializing locally and adding a remote. The key is that the local repository is correctly configured to know about its remote counterpart.
