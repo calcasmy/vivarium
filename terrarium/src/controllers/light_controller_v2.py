@@ -47,6 +47,14 @@ def main(action: str):
     db_operations = DatabaseOperations()
     db_operations.connect()
 
+    try:
+        light_controller = LightControllerV2(db_operations = db_operations)
+        light_controller.control_light(action)
+    except Exception as e:
+        logger.exception(f"An unexpected error occurred: {e}")
+    finally:
+        db_operations.close()
+
     light_controller = LightControllerV2(db_operations=db_operations)
     light_controller.control_light(action)
 

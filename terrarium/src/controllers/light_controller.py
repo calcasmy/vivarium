@@ -22,7 +22,7 @@ logger = LogHelper.get_logger(__name__)
 # gpio_config = GPIOConfig()
 light_config = LightConfig()
 
-class LightControler:
+class LightController:
     """
     Controls the vivarium lights using GPIO and database interaction.
     """
@@ -239,8 +239,13 @@ def main(action):
     db_operations = DatabaseOperations()
     db_operations.connect()
 
-    light_controller = LightControler(db_operations = db_operations)
-    light_controller.control_light(action)
+    try:
+        light_controller = LightController(db_operations = db_operations)
+        light_controller.control_light(action)
+    except Exception as e:
+        logger.exception(f"An unexpected error occurred: {e}")
+    finally:
+        db_operations.close()
 
 if __name__ == "__main__":
     import sys

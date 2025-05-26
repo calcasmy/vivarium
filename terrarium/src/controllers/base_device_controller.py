@@ -6,6 +6,7 @@ import gpiod
 from datetime import datetime
 
 # Adjust path as needed to import your utilities
+# Assuming this file is in vivarium/terrarium/src/controllers
 vivarium_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
 if vivarium_path not in sys.path:
     sys.path.insert(0, vivarium_path)
@@ -35,13 +36,12 @@ class BaseDeviceController:
         self.equipment_id = equipment_id
         self.relay_pin = relay_pin
         self.consumer_name = consumer_name
-        self.db_ops = db_operations # Ensure db_operations is always provided
+        self.db_ops = db_operations
 
         self.chip = None
         self.line = None
         self._setup_gpio()
 
-        # These queries are common to all devices with status tracking
         self._devicequeries = DeviceQueries(db_operations=self.db_ops)
         self._devicestatus = DeviceStatusQueries(db_operations=self.db_ops)
 

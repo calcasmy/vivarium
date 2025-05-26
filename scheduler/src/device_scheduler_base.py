@@ -5,7 +5,6 @@ import sys
 from datetime import datetime, timedelta
 from apscheduler.schedulers.blocking import BlockingScheduler
 
-# Adjust path as needed to import your utilities
 # Assuming this file is in vivarium/scheduler/src/
 vivarium_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 if vivarium_path not in sys.path:

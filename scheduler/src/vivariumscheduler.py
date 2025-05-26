@@ -29,7 +29,7 @@ from weather.fetch_daily_weather import FetchDailyWeather
 from weather.src.database.astro_queries import AstroQueries
 from weather.src.database.database_operations import DatabaseOperations
 
-from terrarium.src.controllers.light_controller import LightControler
+from terrarium.src.controllers.light_controller import LightController
 from terrarium.src.controllers.terrarium_status import TerrariumStatus
 from terrarium.src.controllers.mister_controller import MisterController
 from terrarium.src.controllers.humidifier_control import HumidiferController
@@ -208,7 +208,7 @@ class VivariumScheduler:
             logger.error(f"Error updating devices: {e}")
 
     def _run_light_control(self, action):
-        light_control_script = LightControler.script_path()
+        light_control_script = LightController.script_path()
         logger.info(f"Running light control: {action}")
         try:
             process = subprocess.Popen(['python3', light_control_script, action], stdout=subprocess.PIPE, stderr=subprocess.PIPE)

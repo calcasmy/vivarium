@@ -1,3 +1,5 @@
+GIT:
+
 If git init, then add remote repository.
     git remote add origin your_remote_repo_url
         Replace your_remote_repo_url with the actual HTTPS or SSH URL of your Git repository 
@@ -32,3 +34,40 @@ Making changes to your code.
 
 The subsequent pull and push commands operate the same way, regardless of whether the repository was initially created with git clone 
 or by initializing locally and adding a remote. The key is that the local repository is correctly configured to know about its remote counterpart.
+
+systed setup:
+
+list of commands:
+sudo nano /etc/systemd/system/vivarium-scheduler.service
+    [Unit]
+    Description=Vivarium Automation Scheduler
+    After=network.target multi-user.target postgresql.service
+
+    [Service]
+    User=ibis
+    Group=ibis
+    Environment="PYTHONPATH=/home/ibis/vivarium/.vivaenv/lib/python3.11/site-packages:/home/ibis/vivarium/"
+    WorkingDirectory=/home/ibis/vivarium/
+    ExecStart=/home/ibis/vivarium/.vivaenv/bin/python /home/ibis/vivarium/scheduler/src/vivariumscheduler.py
+    Restart=on-failure
+    StandardOutput=journal
+    StandardError=journal
+    ;comments
+    ;StandardOutput=/var/log/vivarium-scheduler.log
+    ;StandardError=/var/log/vivarium-scheduler-error.log
+    ;Environment=PYTHONUNBUFFERED=1
+
+    [Install]
+    WantedBy=multi-user.target
+
+sudo systemctl daemon-reload
+sudo systemctl enable vivarium-scheduler.service
+sudo systemctl start vivarium-scheduler.service
+sudo systemctl stop vivarium-scheduler.service
+sudo systemctl restart vivarium-scheduler.service
+sudo systemctl status vivarium-scheduler.service
+
+journalctl -u vivarium-scheduler.service -f
+journalctl -u vivarium-scheduler.service --since "2025-05-25 11:11:00" -x -e
+
+

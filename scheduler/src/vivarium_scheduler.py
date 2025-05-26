@@ -20,11 +20,11 @@ if vivarium_path not in sys.path:
 
 # Importing utilities package
 from utilities.src.logger import LogHelper
-from utilities.src.config import Config, LightConfig, MisterConfig, TempConfig # Import relevant configs
+from utilities.src.config import Config, LightConfig, MisterConfig, TempConfig
 from utilities.src.database_operations import DatabaseOperations
 
 # Import the device controllers (now classes, not just script paths)
-from terrarium.src.controllers.light_controller import LightControler
+from terrarium.src.controllers.light_controller import LightController
 from terrarium.src.controllers.terrarium_status import TerrariumStatus # This is still a script/job that fetches status
 from terrarium.src.controllers.mister_controller import MisterController
 # from terrarium.src.controllers.humidifier_control import HumidiferController # Uncomment when ready
@@ -39,10 +39,9 @@ from weather.fetch_daily_weather import FetchDailyWeather
 from weather.src.database.astro_queries import AstroQueries # Still needed for LightScheduler
 
 logger = LogHelper.get_logger(__name__)
-# Configurations (can be passed to sub-schedulers if needed, or accessed globally)
+temp_config = TempConfig() # For fetching thresholds
 light_config = LightConfig()
 mister_config = MisterConfig()
-temp_config = TempConfig() # For fetching thresholds
 
 class VivariumSchedulerV2:
     '''
@@ -58,7 +57,7 @@ class VivariumSchedulerV2:
         logger.info("Database connection established for VivariumScheduler.")
 
         # Initialize Device Controllers
-        self.light_controller = LightControler(db_operations=self.db_operations)
+        self.light_controller = LightController(db_operations=self.db_operations)
         self.mister_controller = MisterController(db_operations=self.db_operations)
         # self.humidifier_controller = HumidiferController(db_operations=self.db_operations) # Uncomment when ready
 

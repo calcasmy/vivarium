@@ -201,3 +201,14 @@ class LightConfig(Config):
         self.lights_on = self.get(light_section, 'growlight.on', default = "6:00 AM")
         self.lights_off = self.get(light_section, 'growlight.off', default = "6:00 PM")
 
+class HumidifierConfig(Config):
+    '''
+    A subclass for Humidifier Settings
+    '''
+    def __init__(self, config_file = 'config.ini'):
+        super().__init__(config_file)
+        humidifier_section = 'humidifier'
+        self.username = self.get(humidifier_section, 'humidifier.username', default = 'username', type = str)
+        self.password = self.get(humidifier_section, 'humidifier.password', default = 'password', type = str)
+
+

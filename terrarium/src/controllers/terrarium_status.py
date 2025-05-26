@@ -20,9 +20,9 @@ from utilities.src.database_operations import DatabaseOperations
 
 from terrarium.src.database.device_queries import DeviceQueries
 from terrarium.src.database.device_status_queries import DeviceStatusQueries
-from terrarium.src.database.sensor_queries import SensorsQueries
+from terrarium.src.database.sensor_queries import SensorQueries
 from terrarium.src.database.sensor_data_queries import SensorDataQueries
-from terrarium.src.controllers.light_controller import LightControler
+from terrarium.src.controllers.light_controller import LightController
 from terrarium.src.controllers.mister_controller import MisterController
 
 # Global class variables (initialize only once)
@@ -151,7 +151,7 @@ def log_sensor_data(db_operations):
             # Get the current timestamp in ISO 8601 format
             timestamp = datetime.now().isoformat()
             # Fetch sensor ID by name
-            sensor_queries = SensorsQueries(db_operations)
+            sensor_queries = SensorQueries(db_operations)
             sensor_data_queries = SensorDataQueries(db_operations)
             # sensor_details = sensor_info.get_sensor_by_name(sensor_name='HTU21D')
             sensor_details = sensor_queries.get_sensor_by_name(sensor_fetcher.sensor_name)
@@ -208,8 +208,12 @@ def main():
     db_operations = DatabaseOperations()
     db_operations.connect
 
-    log_sensor_data(db_operations)
-
+    try:
+         log_sensor_data(db_operations)
+    except Exception as e:
+        logger.exception(f"An unexpected error occurred: {e}")
+    finally:
+        db_operations.close()  # Close the connection in the finally block
 
 if __name__ == "__main__":
     main()
