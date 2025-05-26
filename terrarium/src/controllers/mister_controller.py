@@ -1,14 +1,3 @@
-import os
-
-class MisterController:
-    def __init__(self):
-        pass
-
-    @staticmethod
-    def script_path() -> str:
-        '''Returns the Absolute path of the script'''
-        return os.path.abspath(__file__)
-    
 """ 
 #--------------------------------------------------------------------------------#
 # -*- vivarium.py -*-
@@ -27,6 +16,29 @@ class MisterController:
 #--------------------------------------------------------------------------------#
 """
 
+import os
+import sys
+import time 
+import gpiod
+
+from pytz import timezone
+from datetime import datetime, timezone
+
+# Get the absolute path to the 'vivarium' directory
+vivarium_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+
+# Add 'vivarium' to the Python path if it's not already there
+if vivarium_path not in sys.path:
+    sys.path.insert(0, vivarium_path)
+
+# from vivarium_dao import VivariumDAO
+from utilities.src.logger import LogHelper
+from utilities.src.config import MisterConfig
+from utilities.src.database_operations import DatabaseOperations
+
+from terrarium.src.database.device_status_queries import DeviceStatusQueries
+from terrarium.src.database.device_queries import DeviceQueries
+
 # import RPi.GPIO as GPIO
 # import time
 # import argparse
@@ -35,39 +47,133 @@ class MisterController:
 # from propertyreader import TIMECONFIG, GPIOCONFIG
 # from logger_helper import LogHelper
 # from datetime import datetime, timezone
-# from pytz import timezone
 
 # from src.terrarium.humidifier_control import ControlHumidifier
 
 # logger = LogHelper.get_logger('vivarium')
 
-# class MotorControl:
+logger = LogHelper.get_logger(__name__)
+mister_config = MisterConfig()
+# gpio_config = GPIOConfig()
 
-#     def __init__(self):
-#         self.relay_pin = int(GPIOCONFIG.gpiomctl)
-#         GPIO.setmode(GPIO.BCM)
+class MisterController:
+    def __init__(self,equipment_id = 2, db_operations: DatabaseOperations = None):
+        self.relay_pin = int(mister_config.mister_control_pin)
+        self.equipment_id = equipment_id
+        self.chip = None
+        self.line = None
+        self._setup_gpio()
+        self._devicequeries = DeviceQueries(db_operations = self.db_ops)
+        self._devicestatus = DeviceStatusQueries(db_operations= self.db_ops)
 
-#     def motor_control(self, duration = 5, initiate = 'auto'):
+    def __del__(self):
+        """
+        Ensures the GPIO line is released when the object is destroyed.
+        """
+        if self.line:
+            try:
+                self.line.release()
+                logger.info(f"GPIO line {self.relay_pin} released.")
+            except Exception as e:  # Catch all exceptions, including the 'AttributeError' from _update_status
+                logger.error(f'An error occurred while controlling the mister or updating database: {e}')
 
-#         eqip = 'm'
+        if self.chip:
+            try:
+                self.chip.close()
+                logger.info(f"GPIO chip closed.")
+            except Exception as e:
+                logger.error(f"Error closing GPIO chip: {e}")
 
-#         if(initiate == 'auto'):
-#             motor_status = self.motor_last_run(eqip)
+    @staticmethod
+    def script_path() -> str:
+        '''Returns the Absolute path of the script'''
+        return os.path.abspath(__file__)
+    
+    def _setup_gpio(self):  # Private method
+        """Sets up the GPIO pin for controlling the mister."""
 
-#             if(motor_status != []):
-#                 last_runtime = datetime.combine(motor_status[0], motor_status[1])
-#                 run_delta = round((datetime.now(timezone('US/Eastern')).replace(tzinfo=None) - last_runtime).total_seconds()/60, 0)
-#             else:
-#                 last_runtime = datetime.now(timezone('US/Eastern')).replace(tzinfo=None)
+        try:
+            # Open the GPIO chip, typically 'gpiochip0' on Raspberry Pi and similar boards
+            self.chip = gpiod.Chip('gpiochip0')
+            self.line = self.chip.get_line(self.relay_pin)
 
-#             if(run_delta > int(TIMECONFIG.motorruntime)):
-#                 self.run_motor(eqip, duration)
-#             else:
-#                 logger.newline()
-#                 logger.info(f'Motor minimum interval duration \'{TIMECONFIG.motorruntime} minutes\' not met, running Humidifier\n')
-#                 ControlHumidifier.control_vivarium_humidifier()
-#         else:
-#             self.run_motor(eqip, duration)
+            # Request the line as output
+            # Pass consumer='mister_control' for better debugging with gpiodetect/gpioinfo
+            self.line.request(consumer='mister_control', type=gpiod.LINE_REQ_DIR_OUT)
+            logger.info(f"GPIO line {self.relay_pin} configured as output.")
+
+        except gpiod.ChipError as e:
+            logger.error(f"Failed to open GPIO chip or get line: {e}")
+            sys.exit(1)  # Exit if GPIO setup fails, as mister control won't work
+        except Exception as e:
+            logger.error(f"An unexpected error occurred during GPIO setup: {e}")
+            sys.exit(1)
+
+    def _get_status(self): # Private method
+        """
+        Fetches the current status of the mister from the database.
+
+        Returns:
+            bool: The current status (True for on, False for off).
+
+        Raises:
+            Exception: If there's an error fetching the status.
+        """
+        try:
+            return self._devicestatus.get_latest_status_by_device_id(device_id=self.equipment_id) # returns dict
+        except Exception as e:
+            error_message = f"Failed to get status for {self.equipment_id}: {e}"
+            logger.error(error_message)
+            raise  # Re-raise the exception to be handled in control_mister
+
+    def _update_status(self, status: bool):
+        """
+        Updates the status of the mister in the database.
+
+        Args:
+            status (bool): The new status to set (True for on, False for off).
+        Raises:
+            Exception: If there's an error updating the status.
+        """
+        try:
+            self._devicestatus.insert_device_status(
+                device_id = self.equipment_id, 
+                timestamp = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S"), 
+                is_on = status
+            ) # Call requires refactoring.
+        except Exception as e:
+            error_message = f"Failed to update status for {self.equipment_id}: {e}"
+            logger.error(error_message)
+            raise  # Re-raise for handling in mister_control
+
+    def mister_control(self, action:str, duration:int = 5, initiate: str = 'auto'):
+        """
+        Controls the mister based on the provided action.
+
+        Args:
+            action (str): The desired action ('on' or 'off').
+        """
+
+        if(initiate == 'auto'):
+            mister_status = self._get_status()
+
+            current_is_on = None
+            if mister_status is not None and 'is_on' in mister_status:
+                current_is_on = mister_status['is_on']
+                last_runtime = mister_status['timestamp']
+                run_delta = round((datetime.now(timezone('US/Eastern')).replace(tzinfo=None) - last_runtime).total_seconds()/60, 0)
+            else:
+                last_runtime = datetime.now(timezone('US/Eastern')).replace(tzinfo=None)
+                logger.warning("Could not retrieve current mister status from database. Assuming unknown state and proceeding with action.")
+
+            if(run_delta > int(mister_config.mister_interval)):
+                self.run_mister(duration)
+            else:
+                logger.newline()
+                logger.info(f'Motor minimum interval duration \'{mister_config.mister_interval} minutes\' not met, running Humidifier\n')
+                # ControlHumidifier.control_vivarium_humidifier()
+        else:
+            self.run_mister(duration)
         
 #     def run_motor(self, eqip, duration):
 #         try:

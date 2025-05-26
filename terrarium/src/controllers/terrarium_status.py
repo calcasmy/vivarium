@@ -27,7 +27,7 @@ from terrarium.src.controllers.mister_controller import MisterController
 
 # Global class variables (initialize only once)
 # logger = LogHelper.get_logger(__name__)
-logger = LogHelper.get_logger("Terrarium_Status")
+logger = LogHelper.get_logger(__name__)
 
 TIMECONFIG = TimeConfig()
 
@@ -146,13 +146,7 @@ def log_sensor_data(db_operations):
         # Retrieve data from the queue
         if not queue.empty():
             sensor_data = queue.get() #Fetch data from queue
-            #  Create the raw_data dictionary.
-            # raw_data = {
-            #     "temperature_celsius": temperature,
-            #     "temperature_fahrenheit": temperature_fahrenheit,
-            #     "humidity": humidity,
-            #     #  Add other sensor readings here as needed
-            # }
+
             raw_data = json.dumps(sensor_data)
             # Get the current timestamp in ISO 8601 format
             timestamp = datetime.now().isoformat()
@@ -177,7 +171,7 @@ def log_sensor_data(db_operations):
 
             # send_temperature(temperature)  # Send the temperature
 
-            # if humidity < HUMIDITY_THRESHOLD:
+            # if sensor_data['humidity_percentage'] < HUMIDITY_THRESHOLD:
             #     mister_controller = MisterController()
             #     mister_controller.mist_control(duration=MOTOR_DURATION)
 

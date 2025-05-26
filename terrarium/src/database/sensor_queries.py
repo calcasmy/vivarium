@@ -14,7 +14,7 @@ class SensorsQueries(DatabaseOperations):
             RETURNING sensor_id;
         """
         params = (sensor_name, sensor_type, location, model, date_installed)
-        result = self.execute_query(query, params, fetchone=True)
+        result = self.execute_query(query, params, fetch=True)
         if result:
             return result[0]
         else:
@@ -28,7 +28,7 @@ class SensorsQueries(DatabaseOperations):
             WHERE sensor_id = %s;
         """
         params = (sensor_id,)
-        result = self.execute_query(query, params, fetchone=True)
+        result = self.execute_query(query, params, fetch=True)
         if result:
             return {
                 'sensor_id': result[0],

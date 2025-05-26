@@ -76,7 +76,7 @@ class DatabaseConfig(Config):
         db_section      = 'database'  # Consistent section name
         self.dbname     = self.get(db_section, 'dbname', default='vivarium')
         self.host       = self.get(db_section, 'host', default='localhost')
-        self.user       = self.get(db_section, 'user', default='neptune')
+        self.user       = self.get(db_section, 'user', default='ibis')
         self.password   = self.get(db_section, 'password', default='xxxxxx123456789xxxxxxxxxxxx')
         self.port       = self.get(db_section, 'pport', default=5432, type=int) #added type
         # self.sslmode = self.get(db_section, 'sslmode', default='require') # Removed sslmode
@@ -139,18 +139,20 @@ class LogConfig(Config):
         self.max_bytes = self.get(log_section, 'log.max_bytes', default = 5242880, type = int)
         self.backup_count = self.get(log_section, 'log.backup_count', default = 5, type = int)
 
-class FanConfig(Config):
+class ExhaustConfig(Config):
     """
     A subclass for fan settings
     """
     def __init__(self, config_file='config.ini'):
         super().__init__(config_file)
-        fan_section = 'FanSection'
-        self.off_speed = self.get(fan_section, 'fan.off', default = 0, type = int)
-        self.low_speed = self.get(fan_section, 'fan.low', default = 30, type = int)
-        self.medium_speed = self.get(fan_section, 'fan.med', default = 60, type = int)
-        self.high_speed = self.get(fan_section, 'fan.high', default = 85, type = int)
-        self.max_speed = self.get(fan_section, 'fan.max', default = 100, type = int)
+        fan_section = 'exhaust'
+        self.off_speed = self.get(fan_section, 'exhaust.off', default = 0, type = int)
+        self.low_speed = self.get(fan_section, 'exhaust.low', default = 30, type = int)
+        self.medium_speed = self.get(fan_section, 'exhaust.med', default = 60, type = int)
+        self.high_speed = self.get(fan_section, 'exhaust.high', default = 85, type = int)
+        self.max_speed = self.get(fan_section, 'exhaust.max', default = 100, type = int)
+        self.pwm_controlpin = self.get(fan_section, 'exhaust.pwm_controlpin', default = 12, type = int)
+        self.rpm_controlpin = self.get(fan_section, 'exhaust.rpm_controlpin', default = 12, type = int)
 
 class TempConfig(Config):
     """
@@ -158,15 +160,15 @@ class TempConfig(Config):
     """
     def __init__(self, config_file='config.ini'):
         super().__init__(config_file)
-        temp_section = 'TempSection'
-        self.low_temp = self.get(temp_section, 'temp.low', default = 70, type = int)
-        self.medium_temp = self.get(temp_section, 'temp.med', default = 80, type = int)
-        self.high_temp = self.get(temp_section, 'temp.high', default = 90, type = int)
-        self.max_temp = self.get(temp_section, 'temp.max', default = 100, type = int)
+        temp_section = 'temperature'
+        self.low_temp = self.get(temp_section, 'temperature.low', default = 70, type = int)
+        self.medium_temp = self.get(temp_section, 'temperature.med', default = 80, type = int)
+        self.high_temp = self.get(temp_section, 'temperature.high', default = 90, type = int)
+        self.max_temp = self.get(temp_section, 'temperature.max', default = 100, type = int)
 
 class GPIOConfig(Config):
     """
-    A subclass for GPIO settings
+        A subclass for GPIO settings
     """
     def __init__(self, config_file='config.ini'):
         super().__init__(config_file)
@@ -175,3 +177,27 @@ class GPIOConfig(Config):
         self.rpm_pin = self.get(gpio_section, 'gpio.rpm', default = 16, type = int)
         self.motor_control_pin = self.get(gpio_section, 'gpio.mcontrol', default = 21, type = int)
         self.light_control_pin = self.get(gpio_section, 'gpio.lcontrol', default = 20, type=int)
+
+class MisterConfig(Config):
+    '''
+        A subclass for Mister Settings
+    '''
+    def __init__(self, config_file = 'config.ini'):
+        super().__init__(config_file)
+        mister_section = 'mister'
+        self.mister_control_pin = self.get(mister_section, 'mister.controlpin', default = 21, type = int)
+        self.humidity_threshold = self.get(mister_section, 'mister.hu_threshold', default = 80, type = int)
+        self.mister_duration = self.get(mister_section, 'duration', default = 30, type = int)
+        self.mister_interval = self.get(mister_section, 'interval', default = 360, type = int)
+
+class LightConfig(Config):
+    '''
+        A subclass for Light Settings
+    '''
+    def __init__(self, config_file = 'config.ini'):
+        super().__init__(config_file)
+        light_section = 'growlight'
+        self.lights_control_pin = self.get(light_section, 'growlight.controlpin', default = 20, type = int)
+        self.lights_on = self.get(light_section, 'growlight.on', default = "6:00 AM")
+        self.lights_off = self.get(light_section, 'growlight.off', default = "6:00 PM")
+

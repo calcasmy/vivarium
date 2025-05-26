@@ -1,6 +1,7 @@
 import os
 import sys
 import gpiod
+from datetime import date, datetime
 # Get the absolute path to the 'vivarium' directory
 vivarium_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
@@ -11,30 +12,39 @@ if vivarium_path not in sys.path:
 # from vivarium_dao import VivariumDAO
 from utilities.src.logger import LogHelper
 from utilities.src.config import GPIOConfig
+from utilities.src.config import LightConfig
+from utilities.src.database_operations import DatabaseOperations
 
+from terrarium.src.database.device_status_queries import DeviceStatusQueries
 from terrarium.src.database.device_queries import DeviceQueries
 
 logger = LogHelper.get_logger(__name__)
-gpio_config = GPIOConfig()
+# gpio_config = GPIOConfig()
+light_config = LightConfig()
 
 class LightControler:
     """
     Controls the vivarium lights using GPIO and database interaction.
     """
 
-    def __init__(self, equipment_id='l'):  # Default equipment_id
+    def __init__(self, equipment_id=1, db_operations: DatabaseOperations = None):  # Default equipment_id
         """
         Initializes the LightControl object.
 
         Args:
             equipment_id (str, optional): The equipment ID. Defaults to 'l'.
         """
+        if db_operations:
+            self.db_ops = db_operations
+
         self.equipment_id = equipment_id
-        self.relay_pin = int(gpio_config.light_control_pin)  # Get pin from config
+        # self.relay_pin = int(gpio_config.light_control_pin)  # Get pin from config
+        self.relay_pin = int(light_config.lights_control_pin)
         self.chip = None
         self.line = None
         self._setup_gpio()
-        self.dao = DeviceQueries() #instanciating DB Queries
+        self._devicequeries = DeviceQueries(db_operations = self.db_ops)
+        self._devicestatus = DeviceStatusQueries(db_operations= self.db_ops)
 
     def __del__(self):
         """
@@ -44,8 +54,9 @@ class LightControler:
             try:
                 self.line.release()
                 logger.info(f"GPIO line {self.relay_pin} released.")
-            except gpiod.LineError as e:
-                logger.error(f"Error releasing GPIO line {self.relay_pin}: {e}")
+            except Exception as e:  # Catch all exceptions, including the 'AttributeError' from _update_status
+                logger.error(f'An error occurred while controlling the lights or updating database: {e}')
+
         if self.chip:
             try:
                 self.chip.close()
@@ -63,7 +74,6 @@ class LightControler:
 
         try:
             # Open the GPIO chip, typically 'gpiochip0' on Raspberry Pi and similar boards
-            # You might need to adjust this depending on your specific hardware.
             self.chip = gpiod.Chip('gpiochip0')
             self.line = self.chip.get_line(self.relay_pin)
 
@@ -90,7 +100,7 @@ class LightControler:
             Exception: If there's an error fetching the status.
         """
         try:
-            return self.dao.getStatus(self.equipment_id, 'p') # Call requires refactoring
+            return self._devicestatus.get_latest_status_by_device_id(device_id=self.equipment_id) # Call requires refactoring
         except Exception as e:
             error_message = f"Failed to get status for {self.equipment_id}: {e}"
             logger.error(error_message)
@@ -102,13 +112,15 @@ class LightControler:
 
         Args:
             status (bool): The new status to set (True for on, False for off).
-            db_type (str): The database type ('p' or 'a').
-
         Raises:
             Exception: If there's an error updating the status.
         """
         try:
-            self.dao.putStatus(self.equipment_id, status) # Call requires refactoring.
+            self._devicestatus.insert_device_status(
+                device_id = self.equipment_id, 
+                timestamp = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S"), 
+                is_on = status
+            ) # Call requires refactoring.
         except Exception as e:
             error_message = f"Failed to update status for {self.equipment_id}: {e}"
             logger.error(error_message)
@@ -122,25 +134,65 @@ class LightControler:
             action (str): The desired action ('on' or 'off').
         """
 
+        # 1. Validate action and determine target state
+        target_state = None
+        if action.lower() == 'on':
+            target_state = True
+        elif action.lower() == 'off':
+            target_state = False
+        else:
+            logger.warning(f"Invalid light control action: '{action}'. Must be 'on' or 'off'.")
+            return # Exit if the action is invalid
+        
+        try:
+            # 2. Get current status from the database
+            current_status_dict = self._get_status() # This should return {'is_on': True/False, ...} or None
+            
+            current_is_on = None
+            if current_status_dict is not None and 'is_on' in current_status_dict:
+                current_is_on = current_status_dict['is_on']
+            else:
+                logger.warning("Could not retrieve current light status from database. Assuming unknown state and proceeding with action.")
+
+            # 3. Compare current state with target state and act if necessary
+            if current_is_on is not None and current_is_on == target_state:
+                logger.info(f"Vivarium grow lights are already {'ON' if target_state else 'OFF'}. No action taken.")
+            else:
+                # State needs to change, or current_is_on was None (unknown)
+                gpio_value = 1 if target_state else 0
+                log_message = "turning ON" if target_state else "turning OFF"
+
+                self.line.set_value(gpio_value)  # Apply the new state
+                self._update_status(target_state) # Update database with the new state
+                logger.info(f"Vivarium grow lights successfully {log_message}.")
+
+        except Exception as e:
+            # Catch any exceptions from _get_status, _update_status, or gpiod operations
+            logger.error(f'An error occurred while controlling the lights or updating database: {e}')
+
+
         if not self.line:
             logger.error("GPIO line not initialized. Cannot control light.")
             return
-        try:
-            if action.lower() == 'on':
-                self.line.set_value(1)  # Turn on (HIGH)
-                self._update_status(True)
-                logger.info("Vivarium grow lights turned ON")
-            elif action.lower() == 'off':
-                self.line.set_value(0)  # Turn off (LOW)
-                self._update_status(False)
-                logger.info("Vivarium grow lights turned OFF")
-            else:
-                logger.warning(f"Invalid light control action: '{action}'. Must be 'on' or 'off'.")
+        
+        # status = self._get_status()  # Use the private method
+        # if status['is_on'] == True:
+        #     logger.info(f"Vivarium grow lights are currently {action}. No action taken")
+        # else:
+        #     try:
+        #         if action.lower() == 'on':
+        #             self.line.set_value(1)  # Turn on (HIGH)
+        #             self._update_status(True)
+        #             logger.info("Vivarium grow lights turned ON")
+        #         elif action.lower() == 'off':
+        #             self.line.set_value(0)  # Turn off (LOW)
+        #             self._update_status(False)
+        #             logger.info("Vivarium grow lights turned OFF")
+        #         else:
+        #             logger.warning(f"Invalid light control action: '{action}'. Must be 'on' or 'off'.")
 
-        except gpiod.LineError as e:
-            logger.error(f'An error occurred while controlling GPIO line {self.relay_pin}: {e}')
-        except Exception as e:  # Catch exceptions from database operations
-            logger.error(f'An error occurred while controlling the lights or updating database: {e}')
+        #     except Exception as e:  # Catch exceptions from database operations
+        #         logger.error(f'An error occurred while controlling the lights or updating database: {e}')
         #
         # try:
         #     if action.lower() == 'on':
@@ -184,7 +236,10 @@ def main(action):
     """
     Main function to create and run the LightControl.
     """
-    light_controller = LightControler()
+    db_operations = DatabaseOperations()
+    db_operations.connect()
+
+    light_controller = LightControler(db_operations = db_operations)
     light_controller.control_light(action)
 
 if __name__ == "__main__":

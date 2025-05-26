@@ -22,6 +22,7 @@ if vivarium_path not in sys.path:
 # importing utilties package
 from utilities.src.logger import LogHelper
 from utilities.src.config import Config
+from utilities.src.config import LightConfig
 from utilities.src.path_utils import PathUtils
 
 from weather.fetch_daily_weather import FetchDailyWeather
@@ -33,8 +34,9 @@ from terrarium.src.controllers.terrarium_status import TerrariumStatus
 from terrarium.src.controllers.mister_controller import MisterController
 from terrarium.src.controllers.humidifier_control import HumidiferController
 
-# logger = LogHelper.get_logger(__name__)
-logger = LogHelper.get_logger("Vivarium_Scheduler")
+logger = LogHelper.get_logger(__name__)
+light_config = LightConfig()
+# logger = LogHelper.get_logger("Vivarium_Scheduler")
 
 class VivariumScheduler:
     '''
@@ -57,38 +59,39 @@ class VivariumScheduler:
     def job_listener(self, event):
         if event.exception:
             logger.error(f"Job {event.job_id} raised {event.exception}")
-        elif event.job_id == 'fetch_weather_daily_now':
+        elif event.job_id == 'fetch_weather_daily':
             logger.info(f"Job {event.job_id} successfully finished.")
             # Immediately run the schedule_lights job
-            # :: Temply commented
             self.schedule_lights()
+        elif event.job_id == 'terrarium_status_script':
+            logger.info(f"Job {event.job_id} successfully finished.")
+            #immediately run the device check and schedule the corresponding jobs.
 
     def schedule_jobs(self):
         # Weather API related Jobs
-        # Schedule fetch_daily_weather.py to run RIGHT NOW
-        fetch_weather_script = FetchDailyWeather.script_path()
-        self.scheduler.add_job(
-            self.run_script,
-            'date',  # Use the 'date' trigger
-            run_date=datetime.now(), # Set the run date to the current time
-            args=[fetch_weather_script],
-            id='fetch_weather_daily_now')
-        logger.info(f"Scheduled {os.path.basename(fetch_weather_script)} to run immediately.")
-
-        # Schedule fetch_daily_weather.py to run once a day at 1:00 AM
-        # :: Temply commented
+        # ** Schedule fetch_daily_weather.py to run RIGHT NOW
         # fetch_weather_script = FetchDailyWeather.script_path()
         # self.scheduler.add_job(
-        #     self.run_script, 
-        #     'cron', 
-        #     hour=1, 
-        #     minute=0, 
-        #     args=[fetch_weather_script], 
-        #     id='fetch_weather_daily')
-        # logger.info(f"Scheduled {os.path.basename(fetch_weather_script)} to run daily at 01:00.")
+        #     self.run_script,
+        #     'date',  # Use the 'date' trigger
+        #     run_date=datetime.now(), # Set the run date to the current time
+        #     args=[fetch_weather_script],
+        #     id='fetch_weather_daily_now')
+        # logger.info(f"Scheduled {os.path.basename(fetch_weather_script)} to run immediately.")
 
-        # Not necessary as this job gets scheduled immediately after the weather fetch event is completed.
-        # Schedule devices.py update based on sunrise/sunset (run after fetching weather data)
+        # ** Schedule fetch_daily_weather.py to run once a day at 1:00 AM
+        fetch_weather_script = FetchDailyWeather.script_path()
+        self.scheduler.add_job(
+            self.run_script, 
+            'cron', 
+            hour=1, 
+            minute=0, 
+            args=[fetch_weather_script], 
+            id='fetch_weather_daily')
+        logger.info(f"Scheduled {os.path.basename(fetch_weather_script)} to run daily at 01:00.")
+
+        # Depricated as this job gets scheduled immediately after the weather fetch event is completed.
+        # ** Schedule devices.py update based on sunrise/sunset (run after fetching weather data)
         # self.scheduler.add_job(
         #     self.schedule_lights, 
         #     'cron', 
@@ -97,20 +100,16 @@ class VivariumScheduler:
         #     id='update_devices_astro')
         # logger.info("Scheduled device update based on astro data shortly after weather fetch.")
 
-        # :: Temply commented
-        # Schedule currentstatus.py to run every 5 minutes
-        # terrarium_status_script = TerrariumStatus.script_path()
-        # self.scheduler.add_job(
-        #     self.run_script, 
-        #     'interval', 
-        #     minute=5, 
-        #     # seconds=30, 
-        #     args=[terrarium_status_script], 
-        #     id='run_current_status')
-        # logger.info(f"Scheduled {os.path.basename(terrarium_status_script)} to run every 5 minutes.")
-
-        '''.................................................'''
-
+        # ** Schedule currentstatus.py to run every 5 minutes
+        terrarium_status_script = TerrariumStatus.script_path()
+        self.scheduler.add_job(
+            self.run_script, 
+            'interval', 
+            minutes=5, 
+            # seconds=30, 
+            args=[terrarium_status_script], 
+            id='run_current_status')
+        logger.info(f"Scheduled {os.path.basename(terrarium_status_script)} to run every 5 minutes.")
 
     def run_script(self, script_path):
         script_name = os.path.basename(script_path)
@@ -135,8 +134,6 @@ class VivariumScheduler:
     def schedule_lights(self, sunrise: str = "06:00 AM", sunset: str = "06:00 PM"):
         logger.info("Updating terrarium lights based on sunrise/sunset.")
         try:
-            # config = Config()
-            # db_operations = DatabaseOperations(config)
             db_operations = DatabaseOperations()
             db_operations.connect()
             astro_queries = AstroQueries(db_operations)
@@ -151,6 +148,9 @@ class VivariumScheduler:
                 sunset = astro_data.get('sunset')
                 logger.info(f"Sunrise for {yesterday_str}: {sunrise}, Sunset: {sunset}")
             else:
+                sunrise_time = light_config.lights_on
+
+                sunset_time = light_config.lights_off
                 logger.warning(f"Could not retrieve sunrise/sunset data for {yesterday_str}, using defaults.")
                 
             if sunrise and sunset:
@@ -162,42 +162,40 @@ class VivariumScheduler:
                     sunset_dt_obj = datetime.strptime(sunset.split('\t')[0].strip(), '%I:%M %p')
                     sunset_time = sunset_dt_obj.time()
 
-                    # Schedule light ON at sunrise
-
+                    # Schedule light ON/OFF right now
+                    # self.scheduler.add_job(
+                    #     self._run_light_control,
+                    #     'date',  # Use the 'date' trigger
+                    #     run_date=datetime.now(), # Set the run date to the current time
+                    #     args=['off'],
+                    #     id='lights_on_sunrise',
+                    # )
+                    # logger.info(f"Scheduled lights ON at {sunrise_time.strftime('%H:%M:%S')}.")
+                    
+                    # ** Schedule lights On at sunrise
                     self.scheduler.add_job(
                         self._run_light_control,
-                        'date',  # Use the 'date' trigger
-                        run_date=datetime.now(), # Set the run date to the current time
+                        'cron',
+                        hour=sunrise_time.hour,
+                        minute=sunrise_time.minute,
+                        second=sunrise_time.second,
                         args=['on'],
                         id='lights_on_sunrise',
+                        replace_existing=True
                     )
                     logger.info(f"Scheduled lights ON at {sunrise_time.strftime('%H:%M:%S')}.")
 
-                    # :: Temply commented
-                    # self.scheduler.add_job(
-                    #     self.run_light_control,
-                    #     'cron',
-                    #     hour=sunrise_time.hour,
-                    #     minute=sunrise_time.minute,
-                    #     second=sunrise_time.second,
-                    #     args=['on'],
-                    #     id='lights_on_sunrise',
-                    #     replace_existing=True
-                    # )
-                    # logger.info(f"Scheduled lights ON at {sunrise_time.strftime('%H:%M:%S')}.")
-
-                    # :: Temply commented
-                    # Schedule light OFF at sunset
-                    # self.scheduler.add_job(
-                    #     self._run_light_control,
-                    #     'cron',
-                    #     hour=sunset_time.hour,
-                    #     minute=sunset_time.minute,
-                    #     second=sunset_time.second,
-                    #     args=['off'],
-                    #     id='lights_off_sunset',
-                    #     replace_existing=True
-                    # )
+                    # ** Schedule light OFF at sunset
+                    self.scheduler.add_job(
+                        self._run_light_control,
+                        'cron',
+                        hour=sunset_time.hour,
+                        minute=sunset_time.minute,
+                        second=sunset_time.second,
+                        args=['off'],
+                        id='lights_off_sunset',
+                        replace_existing=True
+                    )
                     logger.info(f"Scheduled lights OFF at {sunset_time.strftime('%H:%M:%S')}.")
 
                 except ValueError as e:
@@ -231,6 +229,12 @@ class VivariumScheduler:
         except Exception as e:
             logger.error(f"Error running light control '{action}': {e}")
 
+    def schedule_mister(self):
+        pass
+
+    def _run_mister_control(self, action):
+        pass
+
     def run(self):
         logger.info("Vivarium Scheduler started.")
         self.schedule_jobs()
@@ -254,11 +258,3 @@ class VivariumScheduler:
 if __name__ == "__main__":
     scheduler = VivariumScheduler()
     scheduler.run()
-
-        # # Schedule currentstatus.py to run every 5 minutes
-        # self.scheduler.add_job(self.run_script, 'interval', minutes=5, args=[VIVARIUM_STATUS_SCRIPT], id='run_current_status')
-        # logger.info(f"Scheduled {VIVARIUM_STATUS_SCRIPT} to run every 5 minutes.")
-
-        # # Schedule devices.py update based on sunrise/sunset (run after fetching weather data)
-        # self.scheduler.add_job(self.update_devices_based_on_astro, 'cron', hour=1, minute=5, id='update_devices_astro')
-        # logger.info("Scheduled device update based on astro data shortly after weather fetch.")
