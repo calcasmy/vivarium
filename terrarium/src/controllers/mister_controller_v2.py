@@ -6,7 +6,7 @@ import time # For time.sleep
 from datetime import datetime
 
 # Get the absolute path to the 'vivarium' directory
-vivarium_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
+vivarium_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 if vivarium_path not in sys.path:
     sys.sys.path.insert(0, vivarium_path)
 
@@ -106,14 +106,18 @@ def main(action: str, duration: int):
     db_operations = DatabaseOperations()
     db_operations.connect()
 
-    mister_controller = MisterControllerV2(db_operations=db_operations)
-    
-    if action == 'run': # For manual run of mister
-        mister_controller.run_mister(duration)
-    elif action == 'auto': # For automatic check
-        mister_controller.control_mister_auto()
-    else:
-        logger.warning(f"Invalid mister action: {action}. Use 'run' or 'auto'.")
+    try: 
+        mister_controller = MisterControllerV2(db_operations=db_operations)
+        
+        if action == 'run': # For manual run of mister
+            mister_controller.run_mister(duration)
+        elif action == 'auto': # For automatic check
+            mister_controller.control_mister_auto()
+        else:
+            logger.warning(f"Invalid mister action: {action}. Use 'run' or 'auto'.")
+    except Exception as e:
+        logger.error(f'Error occurred while trying to control mister: {e}')
+
 
     db_operations.close()
 

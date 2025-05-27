@@ -11,7 +11,7 @@ if vivarium_path not in sys.path:
     sys.path.insert(0, vivarium_path)
 
 from utilities.src.logger import LogHelper
-from utilities.src.database_operations import DatabaseOperations # Used for type hinting
+from utilities.src.database_operations import DatabaseOperations
 
 logger = LogHelper.get_logger(__name__)
 

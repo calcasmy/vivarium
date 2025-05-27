@@ -14,7 +14,7 @@ from utilities.src.logger import LogHelper
 from utilities.src.config import LightConfig
 from utilities.src.database_operations import DatabaseOperations # For type hinting
 from weather.src.database.astro_queries import AstroQueries
-from terrarium.src.controllers.light_controller import LightControler
+from terrarium.src.controllers.light_controller import LightController
 from scheduler.src.device_scheduler_base import DeviceSchedulerBase # Import the base scheduler
 
 logger = LogHelper.get_logger(__name__)
@@ -24,7 +24,7 @@ class LightScheduler(DeviceSchedulerBase):
     """
     Manages the scheduling of vivarium lights based on astro data or defaults.
     """
-    def __init__(self, scheduler: BlockingScheduler, db_operations: DatabaseOperations, light_controller: LightControler):
+    def __init__(self, scheduler: BlockingScheduler, db_operations: DatabaseOperations, light_controller: LightController):
         """
         Initializes the LightScheduler.
 

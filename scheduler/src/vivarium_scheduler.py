@@ -26,7 +26,7 @@ from utilities.src.database_operations import DatabaseOperations
 # Import the device controllers (now classes, not just script paths)
 from terrarium.src.controllers.light_controller import LightController
 from terrarium.src.controllers.terrarium_status import TerrariumStatus # This is still a script/job that fetches status
-from terrarium.src.controllers.mister_controller import MisterController
+from terrarium.src.controllers.mister_controller_v2 import MisterControllerV2
 # from terrarium.src.controllers.humidifier_control import HumidiferController # Uncomment when ready
 
 # New: Import specific scheduler classes
@@ -58,12 +58,8 @@ class VivariumSchedulerV2:
 
         # Initialize Device Controllers
         self.light_controller = LightController(db_operations=self.db_operations)
-        self.mister_controller = MisterController(db_operations=self.db_operations)
+        self.mister_controller = MisterControllerV2(db_operations=self.db_operations)
         # self.humidifier_controller = HumidiferController(db_operations=self.db_operations) # Uncomment when ready
-
-        # Initialize Query classes (if needed by sub-schedulers or directly here)
-        # self.astro_queries = AstroQueries(self.db_operations) # Now handled by LightScheduler
-        # self.sensor_queries = SensorQueries(self.db_operations) # Now handled by MisterScheduler
 
         # Initialize specific device schedulers
         self.light_scheduler = LightScheduler(
@@ -161,7 +157,7 @@ class VivariumSchedulerV2:
             # Ensure DB connection is closed even if an unexpected error occurs
             if self.db_operations:
                 self.db_operations.close()
-                logger.info("Database connection closed (from finally block).")
+                logger.info("Database connection closed")
             logger.info("Vivarium Scheduler stopped.")
 
 if __name__ == "__main__":
