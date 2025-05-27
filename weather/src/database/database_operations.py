@@ -7,9 +7,6 @@ from utilities.src.logger import LogHelper
 logger = LogHelper.get_logger(__name__)
 db_config = DatabaseConfig()
 
-
-ogger = LogHelper.get_logger(__name__)
-
 class DatabaseOperations:
     def __init__(self):
         self.postgres_config = db_config.postgres

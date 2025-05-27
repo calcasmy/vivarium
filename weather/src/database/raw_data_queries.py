@@ -1,7 +1,8 @@
 # src/database/raw_data_queries.py
 import json
 from typing import Optional, Dict
-from weather.src.database.database_operations import DatabaseOperations
+from utilities.src.database_operations import DatabaseOperations
+
 
 class RawDataQueries(DatabaseOperations):
     def __init__(self, db_operations):

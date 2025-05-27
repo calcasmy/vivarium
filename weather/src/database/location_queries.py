@@ -1,6 +1,7 @@
 # src/database/location_queries.py
-from weather.src.database.database_operations import DatabaseOperations
+
 from typing import Optional, Dict
+from utilities.src.database_operations import DatabaseOperations
 
 class LocationQueries(DatabaseOperations):
     def __init__(self, db_operations):

@@ -1,6 +1,7 @@
 # src/database/current_weather_queries.py
-from src.database.database_operations import DatabaseOperations
+
 from typing import Optional, Dict
+from utilities.src.database_operations import DatabaseOperations
 
 class CurrentWeatherQueries(DatabaseOperations):
     def __init__(self):

@@ -1,6 +1,7 @@
 # src/database/condition_queries.py
-from weather.src.database.database_operations import DatabaseOperations
+
 from typing import Dict, Optional
+from utilities.src.database_operations import DatabaseOperations
 
 class ConditionQueries(DatabaseOperations):
     def __init__(self, db_operations):

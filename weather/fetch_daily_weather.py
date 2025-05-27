@@ -16,7 +16,6 @@ if __name__ == "__main__":
 
 from weather.src.atmosphere.weather_api_client import WeatherAPIClient
 
-# from weather.src.database.database_operations import DatabaseOperations
 from weather.src.database.location_queries import LocationQueries
 from weather.src.database.raw_data_queries import RawDataQueries
 from weather.src.database.forecast_queries import ForecastQueries
