@@ -27,7 +27,6 @@ from weather.src.database.hour_queries import HourQueries
 from utilities.src.logger import LogHelper
 from utilities.src.database_operations import DatabaseOperations
 from utilities.src.config import DatabaseConfig, FileConfig
-from utilities.src.path_utils import PathUtils
 
 db_config = DatabaseConfig()
 

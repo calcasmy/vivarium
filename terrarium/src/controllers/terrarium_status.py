@@ -13,17 +13,13 @@ if __name__ == "__main__":
     if vivarium_path not in sys.path:
         sys.path.insert(0, vivarium_path)
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from utilities.src.config import TimeConfig
 from utilities.src.logger import LogHelper
 from utilities.src.database_operations import DatabaseOperations
 
-from terrarium.src.database.device_queries import DeviceQueries
-from terrarium.src.database.device_status_queries import DeviceStatusQueries
 from terrarium.src.database.sensor_queries import SensorQueries
 from terrarium.src.database.sensor_data_queries import SensorDataQueries
-from terrarium.src.controllers.light_controller import LightController
-from terrarium.src.controllers.mister_controller import MisterController
 
 # Global class variables (initialize only once)
 # logger = LogHelper.get_logger(__name__)
@@ -34,8 +30,6 @@ TIMECONFIG = TimeConfig()
 # Constants (moved to the top for better organization)
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 5001
-HUMIDITY_THRESHOLD = 80.0
-MOTOR_DURATION = 30  # seconds
 TEMPERATURE_UNIT = "\u00B0F"  # Fahrenheit symbol
 PROCESS_TIMEOUT = float(TIMECONFIG.process_term_span)
 
@@ -168,12 +162,6 @@ def log_sensor_data(db_operations):
                 f"Humidity: {sensor_data['humidity_percentage']:.2f}%"
             )
             logger.info(log_message)
-
-            # send_temperature(temperature)  # Send the temperature
-
-            # if sensor_data['humidity_percentage'] < HUMIDITY_THRESHOLD:
-            #     mister_controller = MisterController()
-            #     mister_controller.mist_control(duration=MOTOR_DURATION)
 
         else:
             logger.error("No data received from sensor process.")

@@ -21,16 +21,17 @@ if vivarium_path not in sys.path:
 
 # Importing utilities package
 from utilities.src.logger import LogHelper
-from utilities.src.config import Config, LightConfig, MisterConfig, TempConfig
 from utilities.src.database_operations import DatabaseOperations
 
-# Import the device controllers (now classes, not just script paths)
+# Primary terrariu status
+from terrarium.src.controllers.terrarium_status import TerrariumStatus
+
+# Import device controller classes
 from terrarium.src.controllers.light_controller import LightController
-from terrarium.src.controllers.terrarium_status import TerrariumStatus # This is still a script/job that fetches status
 from terrarium.src.controllers.mister_controller_v2 import MisterControllerV2
 # from terrarium.src.controllers.humidifier_control import HumidiferController # Uncomment when ready
 
-# New: Import specific scheduler classes
+# New: Import scheduler classes
 from scheduler.src.light_scheduler import LightScheduler
 from scheduler.src.mister_scheduler import MisterScheduler
 
@@ -40,9 +41,6 @@ from weather.fetch_daily_weather import FetchDailyWeather
 from weather.src.database.astro_queries import AstroQueries # Still needed for LightScheduler
 
 logger = LogHelper.get_logger(__name__)
-temp_config = TempConfig() # For fetching thresholds
-light_config = LightConfig()
-mister_config = MisterConfig()
 
 class VivariumSchedulerV2:
     """
@@ -68,12 +66,23 @@ class VivariumSchedulerV2:
             db_operations=self.db_operations,
             light_controller=self.light_controller
         )
+
         self.mister_scheduler = MisterScheduler(
             scheduler=self.scheduler,
             db_operations=self.db_operations,
             mister_controller=self.mister_controller
         )
+
         logger.info("VivariumScheduler and sub-schedulers initialized.")
+
+        logger.info("Setting initial device states for system startup.")
+        try:
+            # self.light_controller.control_light(action="off") # Ensures light is off on scheduler startup
+            # self.mister_controller.control_mister(action="off") # Ensures mister is off on scheduler startup
+            logger.info("All devices set to initial OFF state by VivariumScheduler.")
+        except Exception as e:
+            logger.error(f"Failed to set initial device states: {e}", exc_info=True)
+
 
     def __del__(self):
         """
@@ -93,6 +102,7 @@ class VivariumSchedulerV2:
         elif event.job_id == 'run_current_status':
             logger.info(f"Job '{event.job_id}' successfully finished. Triggering environmental checks.")
             self.mister_scheduler.check_and_run_mister() # Call the mister scheduler's method
+            
             # Add other device checks here (e.g., self.humidifier_scheduler.check_and_run_humidifier())
 
     def schedule_jobs(self):
@@ -112,24 +122,22 @@ class VivariumSchedulerV2:
         # Schedule terrarium_status.py to run every 5 minutes
         # :: Temporarly commented
         terrarium_status_script = TerrariumStatus.script_path()
-        # self.scheduler.add_job(
-        #     self._run_external_script,
-        #     'interval',
-        #     minutes=5,
-        #     args=[terrarium_status_script],
-        #     id='run_current_status')
-
         self.scheduler.add_job(
-            self._run_external_script, 
-            'interval', 
-            minutes=0.5,
-            args=[terrarium_status_script], 
+            self._run_external_script,
+            'interval',
+            minutes=5,
+            args=[terrarium_status_script],
             id='run_current_status')
+
+        # self.scheduler.add_job(
+        #     self._run_external_script, 
+        #     'interval', 
+        #     minutes=0.5,
+        #     args=[terrarium_status_script], 
+        #     id='run_current_status')
         logger.info(f"Scheduled {os.path.basename(terrarium_status_script)} to run every 1 minutes.")
 
         # logger.info(f"Scheduled {os.path.basename(terrarium_status_script)} to run every 5 minutes.")
-
-
 
     def _run_external_script(self, script_path):
         """
