@@ -56,7 +56,8 @@ class MisterScheduler(DeviceSchedulerBase):
             # Assuming your sensor data has a device_id (e.g., 's' for sensor)
             # and a 'humidity' key in the raw_data or directly in the reading.
             # You might need to adjust get_latest_sensor_reading based on your schema.
-            latest_sensor_reading = self.sensor_data_queries.get_readings_by_sensor_id(device_id = 1)
+            sensor_readings = self.sensor_data_queries.get_readings_by_sensor_id(sensor_id = 1)
+            latest_sensor_reading = sensor_readings[0]
             
             if not latest_sensor_reading or 'raw_data' not in latest_sensor_reading:
                 logger.warning("Could not retrieve latest sensor reading with raw_data. Cannot perform mister check.")

@@ -25,12 +25,12 @@ class LightControllerV2(BaseDeviceController):
         """
         Initializes the LightControler object.
         """
-        equipment_id = 'l' # Consistent string ID for lights
+        device_id = 1
         relay_pin = int(light_config.lights_control_pin)
         consumer_name = 'light_control' # Unique consumer name for GPIO
 
         # Call the base class constructor
-        super().__init__(equipment_id, relay_pin, consumer_name, db_operations)
+        super().__init__(device_id, relay_pin, consumer_name, db_operations)
         logger.info("LightControler initialized.")
 
     def control_light(self, action: str):
@@ -38,7 +38,12 @@ class LightControllerV2(BaseDeviceController):
         Controls the light based on the provided action ('on' or 'off').
         Uses the common toggle_device method from BaseDeviceController.
         """
-        self.toggle_device(action) # Just call the base class method
+        if action == 'status':
+            current_status_dict = self._get_status()
+            if current_status_dict is not None and 'is_on' in current_status_dict:
+                logger.info(f"Current LIGHT status: {current_status_dict['is_on']}")
+        elif action == 'on' or action == 'off':
+            self.toggle_device(action) # Just call the base class method
 
 def main(action: str):
     """

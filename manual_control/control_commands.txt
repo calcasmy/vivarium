@@ -1,0 +1,66 @@
+Lights:
+python3 manual_control/src/control_device.py --device light --action on
+python3 manual_control/src/control_device.py --device light --action off
+python3 manual_control/src/control_device.py --device light --action status
+
+Mister:
+python3 manual_control/src/control_device.py --device light --action on
+python3 manual_control/src/control_device.py --device light --action off
+python3 manual_control/src/control_device.py --device light --action status
+python3 manual_control/src/control_device.py --device mister --action run_for --duration 30
+
+Humidifer:
+
+
+Createing Launch.json on VSCode for debugging:
+
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+   // .vscode/launch.json
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Manual Control (Light ON)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/manual_control/src/control_device.py", // Path to your script
+            "args": ["--device", "light", "--action", "on"], // Command-line arguments
+            "cwd": "${workspaceFolder}", // Current working directory should be the project root
+            "console": "integratedTerminal", // To see print statements and logs
+            "justMyCode": true // Set to false if you want to step into installed library code
+        },
+        {
+            "name": "Debug Manual Control (Light OFF)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/manual_control/src/control_device.py",
+            "args": ["--device", "light", "--action", "off"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Debug Manual Control (Mister ON)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/manual_control/control_device.py",
+            "args": ["--device", "mister", "--action", "on"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Debug Manual Control (Mister Run for 10s)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/manual_control/src/control_device.py",
+            "args": ["--device", "mister", "--action", "run_for", "--duration", "10"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
+        // Add more configurations as needed for other actions/devices
+    ]
+}

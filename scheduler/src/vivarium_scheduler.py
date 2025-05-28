@@ -98,25 +98,38 @@ class VivariumSchedulerV2:
     def schedule_jobs(self):
         logger.info("Scheduling core Vivarium jobs.")
         # Schedule fetch_daily_weather.py to run once a day at 1:00 AM
-        fetch_weather_script = FetchDailyWeather.script_path()
-        self.scheduler.add_job(
-            self._run_external_script,
-            'cron',
-            hour=1,
-            minute=0,
-            args=[fetch_weather_script],
-            id='fetch_weather_daily')
-        logger.info(f"Scheduled {os.path.basename(fetch_weather_script)} to run daily at 01:00.")
+        # :: Temporarly commented
+        # fetch_weather_script = FetchDailyWeather.script_path()
+        # self.scheduler.add_job(
+        #     self._run_external_script,
+        #     'cron',
+        #     hour=1,
+        #     minute=0,
+        #     args=[fetch_weather_script],
+        #     id='fetch_weather_daily')
+        # logger.info(f"Scheduled {os.path.basename(fetch_weather_script)} to run daily at 01:00.")
 
         # Schedule terrarium_status.py to run every 5 minutes
+        # :: Temporarly commented
         terrarium_status_script = TerrariumStatus.script_path()
+        # self.scheduler.add_job(
+        #     self._run_external_script,
+        #     'interval',
+        #     minutes=5,
+        #     args=[terrarium_status_script],
+        #     id='run_current_status')
+
         self.scheduler.add_job(
-            self._run_external_script,
-            'interval',
-            minutes=5,
-            args=[terrarium_status_script],
+            self._run_external_script, 
+            'interval', 
+            minutes=1,
+            args=[terrarium_status_script], 
             id='run_current_status')
-        logger.info(f"Scheduled {os.path.basename(terrarium_status_script)} to run every 5 minutes.")
+        logger.info(f"Scheduled {os.path.basename(terrarium_status_script)} to run every 1 minutes.")
+
+        # logger.info(f"Scheduled {os.path.basename(terrarium_status_script)} to run every 5 minutes.")
+
+
 
     def _run_external_script(self, script_path):
         """

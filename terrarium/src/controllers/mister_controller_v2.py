@@ -39,16 +39,12 @@ class MisterControllerV2(BaseDeviceController):
         """
         Activates the mister for a specified duration.
         """
-        try:
-            if action:
-                self._set_gpio_state(action) # Turn ON / OFF
-                self._update_status(action)
-        except Exception as e:
-            logger.error(f"Error during mister run: {e}")
-            self._set_gpio_state(False) # Ensure it's off if error occurs
-            self._update_status(False) # Try to update status even on error
-
-
+        if action == "status":
+            current_status_dict = self._get_status()
+            if current_status_dict is not None and 'is_on' in current_status_dict:
+                logger.info(f"Current MISTER status: {current_status_dict['is_on']}")
+        elif action == 'on' or action == 'off':
+            self.toggle_device(action) # Just call the base class method
 
     def control_mister_auto(self):
         """

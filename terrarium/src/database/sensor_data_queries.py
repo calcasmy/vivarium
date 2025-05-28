@@ -75,10 +75,10 @@ class SensorDataQueries(DatabaseOperations):
         params = (sensor_id,)
         results = self.execute_query(query, params, fetch=True)
         if results:
-            return [
-                {'reading_id': row[0], 'sensor_id': row[1], 'timestamp': row[2], 'raw_data': row[3]}
-                for row in results
-            ]
+            return [0]
+                # {'reading_id': row[0], 'sensor_id': row[1], 'timestamp': row[2], 'raw_data': row[3]}
+                # for row in results
+            # ]
         else:
             return None
 

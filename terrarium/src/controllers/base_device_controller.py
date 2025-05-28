@@ -23,17 +23,17 @@ class BaseDeviceController:
     A base class for controlling devices via GPIO and managing their status
     in the database.
     """
-    def __init__(self, equipment_id: str, relay_pin: int, consumer_name: str, db_operations: DatabaseOperations):
+    def __init__(self, device_id: str, relay_pin: int, consumer_name: str, db_operations: DatabaseOperations):
         """
         Initializes the base device controller.
 
         Args:
-            equipment_id (str): The unique identifier for the equipment (e.g., 'l' for light, 'm' for mister).
+            device_id (str): The unique identifier for the equipment (e.g., 'l' for light, 'm' for mister).
             relay_pin (int): The GPIO pin number connected to the device's relay.
             consumer_name (str): A descriptive name for the GPIO consumer (e.g., 'light_control', 'mister_control').
             db_operations (DatabaseOperations): An instance of DatabaseOperations for DB interaction.
         """
-        self.equipment_id = equipment_id
+        self.device_id = device_id
         self.relay_pin = relay_pin
         self.consumer_name = consumer_name
         self.db_ops = db_operations
@@ -85,9 +85,9 @@ class BaseDeviceController:
             dict: A dictionary containing the device status, or None if not found/error.
         """
         try:
-            return self._devicestatus.get_latest_status_by_device_id(device_id=self.equipment_id)
+            return self._devicestatus.get_latest_status_by_device_id(device_id=self.device_id)
         except Exception as e:
-            error_message = f"Failed to get status for {self.equipment_id} ({self.consumer_name}): {e}"
+            error_message = f"Failed to get status for {self.device_id} ({self.consumer_name}): {e}"
             logger.error(error_message)
             raise # Re-raise for calling method to handle
 
@@ -100,12 +100,12 @@ class BaseDeviceController:
         """
         try:
             self._devicestatus.insert_device_status(
-                device_id=self.equipment_id,
+                device_id=self.device_id,
                 timestamp=(datetime.now()).strftime("%Y-%m-%d %H:%M:%S"),
                 is_on=status
             )
         except Exception as e:
-            error_message = f"Failed to update status for {self.equipment_id} ({self.consumer_name}): {e}"
+            error_message = f"Failed to update status for {self.device_id} ({self.consumer_name}): {e}"
             logger.error(error_message)
             raise # Re-raise for calling method to handle
 
