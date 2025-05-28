@@ -5,6 +5,7 @@ import os
 import sys
 import time
 import json # Needed for parsing raw_data if it's JSON string
+import traceback
 import subprocess
 
 from datetime import time as datetime_time, date, datetime, timedelta
@@ -44,9 +45,9 @@ light_config = LightConfig()
 mister_config = MisterConfig()
 
 class VivariumSchedulerV2:
-    '''
+    """
         Scheduler class for all vivarium [Aquarium, Terrarium etc.] related jobs
-    '''
+    """
     def __init__(self):
         self.scheduler = BlockingScheduler()
         self.scheduler.add_listener(self.job_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
@@ -85,9 +86,7 @@ class VivariumSchedulerV2:
     def job_listener(self, event):
         if event.exception:
             logger.error(f"Job '{event.job_id}' raised {event.exception.__class__.__name__}: {event.exception}")
-            # Optionally log traceback for more detail
-            # import traceback
-            # logger.error(f"Traceback for job '{event.job_id}':\n{traceback.format_exc()}")
+            logger.error(f"Traceback for job '{event.job_id}':\n{traceback.format_exc()}")
         elif event.job_id == 'fetch_weather_daily':
             logger.info(f"Job '{event.job_id}' successfully finished. Triggering light schedule update.")
             self.light_scheduler.schedule_daily_lights() # Call the light scheduler's method

@@ -154,7 +154,7 @@ class MisterController:
             action (str): The desired action ('on' or 'off').
         """
 
-        if(initiate == 'auto'):
+        if initiate == 'auto':
             mister_status = self._get_status()
 
             current_is_on = None
@@ -175,7 +175,7 @@ class MisterController:
         else:
             self.run_mister(duration)
         
-#     def run_motor(self, eqip, duration):
+#     def turn_on_mister(self):
 #         try:
 #             # Setup the GPIO pin for output
 #             GPIO.setwarnings(False)

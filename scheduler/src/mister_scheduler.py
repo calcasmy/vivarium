@@ -15,9 +15,10 @@ if vivarium_path not in sys.path:
 from utilities.src.logger import LogHelper
 from utilities.src.config import MisterConfig, TempConfig # Assuming TempConfig holds sensor thresholds
 from utilities.src.database_operations import DatabaseOperations # For type hinting
-from terrarium.src.controllers.mister_controller import MisterController
-from terrarium.src.database.sensor_queries import SensorQueries # To fetch sensor data
+from terrarium.src.controllers.mister_controller_v2 import MisterControllerV2
 from scheduler.src.device_scheduler_base import DeviceSchedulerBase # Import the base scheduler
+from terrarium.src.database.sensor_data_queries import SensorDataQueries
+from terrarium.src.database.device_status_queries import DeviceStatusQueries
 
 logger = LogHelper.get_logger(__name__)
 mister_config = MisterConfig()
@@ -27,7 +28,7 @@ class MisterScheduler(DeviceSchedulerBase):
     """
     Manages the scheduling and automatic control of the vivarium mister.
     """
-    def __init__(self, scheduler: BlockingScheduler, db_operations: DatabaseOperations, mister_controller: MisterController):
+    def __init__(self, scheduler: BlockingScheduler, db_operations: DatabaseOperations, mister_controller: MisterControllerV2):
         """
         Initializes the MisterScheduler.
 
@@ -37,8 +38,10 @@ class MisterScheduler(DeviceSchedulerBase):
             mister_controller (MisterController): An instance of the MisterController to operate the mister.
         """
         super().__init__(scheduler, db_operations)
+        self.device_id = 2
         self.mister_controller = mister_controller
-        self.sensor_queries = SensorQueries(self.db_operations) # SensorQueries needs db_operations
+        self.sensor_data_queries = SensorDataQueries(self.db_operations)
+        self.device_status_queries = DeviceStatusQueries(self.db_operations)
         logger.info("MisterScheduler initialized.")
 
     def check_and_run_mister(self):
@@ -53,7 +56,7 @@ class MisterScheduler(DeviceSchedulerBase):
             # Assuming your sensor data has a device_id (e.g., 's' for sensor)
             # and a 'humidity' key in the raw_data or directly in the reading.
             # You might need to adjust get_latest_sensor_reading based on your schema.
-            latest_sensor_reading = self.sensor_queries.get_latest_sensor_reading(device_id='s') # Assuming 's' is sensor ID
+            latest_sensor_reading = self.sensor_data_queries.get_readings_by_sensor_id(device_id = 1)
             
             if not latest_sensor_reading or 'raw_data' not in latest_sensor_reading:
                 logger.warning("Could not retrieve latest sensor reading with raw_data. Cannot perform mister check.")
@@ -94,8 +97,8 @@ class MisterScheduler(DeviceSchedulerBase):
 
         if current_humidity < humidity_threshold:
             logger.info("Humidity is below threshold. Checking mister interval.")
-            
-            last_mister_run_status = self.mister_controller._get_status() # Get last status from controller
+
+            last_mister_run_status = self.device_status_queries.get_latest_status_by_device_id(device_id = self.device_id)
             last_run_timestamp_str = None
             if last_mister_run_status and 'timestamp' in last_mister_run_status:
                 last_run_timestamp_str = last_mister_run_status['timestamp']
@@ -110,11 +113,20 @@ class MisterScheduler(DeviceSchedulerBase):
                         logger.info(f"Mister interval (last run {round(time_since_last_run, 2)} hours ago) fulfilled. Activating mister.")
                         # Schedule mister to run for duration and then stop (Non-blocking for scheduler)
                         self._schedule_date_job(
-                            self.mister_controller.run_mister,
+                            self.mister_controller.control_mister,
                             run_date=datetime.now() + timedelta(seconds=1), # Run almost immediately
-                            args=[mister_duration_seconds],
+                            args=[True],
                             job_id='run_mister_now'
                         )
+                        self._schedule_date_job(
+                            self.mister_controller.turn_off_mister,  # Call the non-blocking OFF method
+                            run_date=datetime.now() + timedelta(seconds=1 + mister_duration_seconds),
+                            # Turn off after duration
+                            args=[False],  # No arguments needed for turn_off_mister
+                            job_id='mister_off_job'
+                        )
+                        logger.info(
+                            f"Mister scheduled to turn ON for {mister_duration_seconds} seconds (non-blocking).")
                     else:
                         logger.info(f"Mister interval not fulfilled. Last run was {round(time_since_last_run, 2)} hours ago (required {mister_interval_hours} hours). Mister not activated.")
                 except ValueError:

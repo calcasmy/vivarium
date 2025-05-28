@@ -13,7 +13,7 @@ if vivarium_path not in sys.path:
 from utilities.src.logger import LogHelper
 from utilities.src.config import MisterConfig
 from utilities.src.database_operations import DatabaseOperations
-from terrarium.src.controllers.base_device_controller import BaseDeviceController # Import the base class
+from terrarium.src.controllers.base_device_controller import BaseDeviceController
 
 logger = LogHelper.get_logger(__name__)
 mister_config = MisterConfig()
@@ -23,36 +23,32 @@ class MisterControllerV2(BaseDeviceController):
     Controls the vivarium mister using GPIO and database interaction.
     Inherits common logic from BaseDeviceController.
     """
-    def __init__(self, db_operations: DatabaseOperations):
-        equipment_id = 'm' # Consistent string ID for mister
+    def __init__(self, device_id = 2, db_operations: DatabaseOperations = None):
         relay_pin = int(mister_config.mister_control_pin)
+        self.device_id = device_id
         consumer_name = 'mister_control' # Unique consumer name for GPIO
 
-        super().__init__(equipment_id, relay_pin, consumer_name, db_operations)
+        super().__init__(device_id, relay_pin, consumer_name, db_operations)
         logger.info("MisterController initialized.")
 
         self.humidity_threshold = mister_config.humidity_threshold
         self.mister_duration = mister_config.mister_duration
         self.mister_interval = mister_config.mister_interval
 
-    def run_mister(self, duration: int):
+    def control_mister(self, action:bool = False):
         """
         Activates the mister for a specified duration.
         """
         try:
-            logger.info(f"Mister running for {duration} seconds.")
-            self._set_gpio_state(True) # Turn ON
-            self._update_status(True)
-
-            time.sleep(duration) # Keep it on for the duration
-
-            self._set_gpio_state(False) # Turn OFF
-            self._update_status(False)
-            logger.info(f"Mister finished running.")
+            if action:
+                self._set_gpio_state(action) # Turn ON / OFF
+                self._update_status(action)
         except Exception as e:
             logger.error(f"Error during mister run: {e}")
             self._set_gpio_state(False) # Ensure it's off if error occurs
             self._update_status(False) # Try to update status even on error
+
+
 
     def control_mister_auto(self):
         """
@@ -65,7 +61,7 @@ class MisterControllerV2(BaseDeviceController):
             # current_humidity = some_sensor_reading_method()
             # if current_humidity < self.humidity_threshold:
 
-            mister_status = self._get_status()
+            mister_status = self.get_status()
             last_runtime = None
             if mister_status and 'timestamp' in mister_status and mister_status['is_on'] == False: # Only consider if it's currently OFF
                  last_runtime = mister_status['timestamp']

@@ -51,7 +51,7 @@ class SensorDataQueries(DatabaseOperations):
         else:
             return None
 
-    def get_readings_by_sensor_id(self, sensor_id: int, limit: Optional[int] = None) -> Optional[List[Dict]]:
+    def get_readings_by_sensor_id(self, sensor_id: int, limit: Optional[int] = 1) -> Optional[List[Dict]]:
         """
         Retrieves readings for a specific sensor.
 
