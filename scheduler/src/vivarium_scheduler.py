@@ -122,7 +122,7 @@ class VivariumSchedulerV2:
         self.scheduler.add_job(
             self._run_external_script, 
             'interval', 
-            minutes=1,
+            minutes=0.5,
             args=[terrarium_status_script], 
             id='run_current_status')
         logger.info(f"Scheduled {os.path.basename(terrarium_status_script)} to run every 1 minutes.")

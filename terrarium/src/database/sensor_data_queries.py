@@ -75,10 +75,10 @@ class SensorDataQueries(DatabaseOperations):
         params = (sensor_id,)
         results = self.execute_query(query, params, fetch=True)
         if results:
-            return [0]
-                # {'reading_id': row[0], 'sensor_id': row[1], 'timestamp': row[2], 'raw_data': row[3]}
-                # for row in results
-            # ]
+            return [
+                {'reading_id': row[0], 'sensor_id': row[1], 'timestamp': row[2], 'raw_data': row[3]}
+                for row in results
+            ]
         else:
             return None
 
@@ -108,5 +108,38 @@ class SensorDataQueries(DatabaseOperations):
                 {'reading_id': row[0], 'sensor_id': row[1], 'timestamp': row[2], 'raw_data': row[3]}
                 for row in results
             ]
+        else:
+            return None
+        
+    def get_latest_readings_by_sensor_id(self, sensor_id: int, limit: Optional[int] = 1) -> Optional[Dict]:
+        """
+        Retrieves readings for a specific sensor.
+
+        Args:
+            sensor_id (int): The ID of the sensor.
+            limit (Optional[int]): The maximum number of readings to retrieve.
+                If None, all readings for the sensor are retrieved.
+
+        Returns:
+            Optional[Dict]: A dictionaries of sensor reading information.  Returns None if no readings are found.
+                The dictionary includes 'reading_id', 'sensor_id', 'timestamp', and 'raw_data'.
+        """
+        query = """
+            SELECT reading_id, sensor_id, timestamp, raw_data
+            FROM public.sensor_readings
+            WHERE sensor_id = %s
+            ORDER BY timestamp DESC
+            {limit_clause};
+        """.format(limit_clause=f"LIMIT {limit}" if limit else "")
+        params = (sensor_id,)
+        results = self.execute_query(query, params, fetch=True)
+        if results:
+            row = results[0]
+            return{
+                'reading_id': row['reading_id'],
+                'sensor_id': row['sensor_id'],
+                'timestamp': row['timestamp'],
+                'raw_data': row['raw_data']
+            }
         else:
             return None

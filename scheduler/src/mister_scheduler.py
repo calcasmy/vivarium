@@ -13,7 +13,7 @@ if vivarium_path not in sys.path:
     sys.path.insert(0, vivarium_path)
 
 from utilities.src.logger import LogHelper
-from utilities.src.config import MisterConfig, TempConfig # Assuming TempConfig holds sensor thresholds
+from utilities.src.config import MisterConfig, SensorConfig # Assuming TempConfig holds sensor thresholds
 from utilities.src.database_operations import DatabaseOperations # For type hinting
 from terrarium.src.controllers.mister_controller_v2 import MisterControllerV2
 from scheduler.src.device_scheduler_base import DeviceSchedulerBase # Import the base scheduler
@@ -22,7 +22,7 @@ from terrarium.src.database.device_status_queries import DeviceStatusQueries
 
 logger = LogHelper.get_logger(__name__)
 mister_config = MisterConfig()
-temp_config = TempConfig() # For humidity/temperature thresholds
+sensor_config = SensorConfig()
 
 class MisterScheduler(DeviceSchedulerBase):
     """
@@ -38,7 +38,6 @@ class MisterScheduler(DeviceSchedulerBase):
             mister_controller (MisterController): An instance of the MisterController to operate the mister.
         """
         super().__init__(scheduler, db_operations)
-        self.device_id = 2
         self.mister_controller = mister_controller
         self.sensor_data_queries = SensorDataQueries(self.db_operations)
         self.device_status_queries = DeviceStatusQueries(self.db_operations)
@@ -53,18 +52,14 @@ class MisterScheduler(DeviceSchedulerBase):
         logger.info("Checking environmental data for automatic mister control.")
         try:
             # 1. Fetch latest humidity from DB
-            # Assuming your sensor data has a device_id (e.g., 's' for sensor)
-            # and a 'humidity' key in the raw_data or directly in the reading.
-            # You might need to adjust get_latest_sensor_reading based on your schema.
-            sensor_readings = self.sensor_data_queries.get_readings_by_sensor_id(sensor_id = 1)
-            latest_sensor_reading = sensor_readings[0]
+            sensor_readings = self.sensor_data_queries.get_latest_readings_by_sensor_id(sensor_id = sensor_config.HTU21D)
             
-            if not latest_sensor_reading or 'raw_data' not in latest_sensor_reading:
+            if not sensor_readings or 'raw_data' not in sensor_readings:
                 logger.warning("Could not retrieve latest sensor reading with raw_data. Cannot perform mister check.")
                 return
 
             # Assuming humidity is stored in raw_data as a dictionary
-            raw_data = latest_sensor_reading['raw_data']
+            raw_data = sensor_readings['raw_data']
             if isinstance(raw_data, str): # If raw_data is stored as JSON string
                 try:
                     raw_data = json.loads(raw_data) # Need to import json
@@ -72,7 +67,7 @@ class MisterScheduler(DeviceSchedulerBase):
                     logger.error(f"Failed to decode raw_data JSON: {raw_data}")
                     return
 
-            current_humidity = raw_data.get('humidity') # Assuming 'humidity' key exists in raw_data dict
+            current_humidity = raw_data.get('humidity_percentage')
 
             if current_humidity is None:
                 logger.warning("Humidity data not found in latest sensor reading. Cannot perform mister check.")

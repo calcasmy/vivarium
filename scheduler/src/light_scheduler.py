@@ -35,7 +35,7 @@ class LightScheduler(DeviceSchedulerBase):
         """
         super().__init__(scheduler, db_operations)
         self.light_controller = light_controller
-        self.astro_queries = AstroQueries(self.db_operations) # AstroQueries needs db_operations
+        self.astro_queries = AstroQueries(self.db_operations)
         logger.info("LightScheduler initialized.")
 
     def schedule_daily_lights(self):

@@ -211,4 +211,13 @@ class HumidifierConfig(Config):
         self.username = self.get(humidifier_section, 'humidifier.username', default = 'username', type = str)
         self.password = self.get(humidifier_section, 'humidifier.password', default = 'password', type = str)
 
+class SensorConfig(Config):
+    """
+    A subclass for Sensor IDs
+    """
+    def __init__(self, config_file = 'config.ini'):
+        super().__init__(config_file)
+        sensor_section = 'sensor'
+        self.HTU21D = self.get(sensor_section, 'sensor.HTU21D-F', default = 1, type = int)
+
 
