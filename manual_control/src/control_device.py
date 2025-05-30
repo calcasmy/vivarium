@@ -83,7 +83,7 @@ def main():
                 logger.error(f"Invalid action '{args.action}' for mister device.")
 
     except Exception as e:
-        logger.error(f"An error occurred during manual control of {args.device.uppe()}: {e}", exc_info=True)
+        logger.error(f"An error occurred during manual control of {args.device.upper()}: {e}", exc_info=True)
     finally:
         if db_operations:
             db_operations.close()

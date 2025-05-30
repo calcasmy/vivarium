@@ -70,4 +70,15 @@ sudo systemctl status vivarium-scheduler.service
 journalctl -u vivarium-scheduler.service -f
 journalctl -u vivarium-scheduler.service --since "2025-05-25 11:11:00" -x -e
 
+SMB.configured
+[vivarium]
+comment = Projct Viva
+path = /home/ibis
+browseable = yes
+writeable = yes
+create mask = 0777
+directory mask = 0777
+public = no
+valid users = ibis
+
 
