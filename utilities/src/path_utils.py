@@ -91,6 +91,27 @@ class PathUtils:
         if not os.path.exists(config_path):
             raise FileNotFoundError(f"Config file not found at {config_path}")
         return config_path
+    
+    @staticmethod
+    def get_config_secrets_path(config_file="config_secrets.ini"):
+        """
+        Constructs the full path to a configuration file.
+
+        Args:
+            config_file (str, optional): The name of the configuration file.
+                Defaults to "config.ini".
+
+        Returns:
+            str: The absolute path to the configuration file.
+
+        Raises:
+            FileNotFoundError: If the configuration file does not exist.
+        """
+        project_root = PathUtils.get_project_root()
+        config_secrets_path = os.path.join(project_root, config_file)
+        if not os.path.exists(config_secrets_path):
+            raise FileNotFoundError(f"Config file not found at {config_secrets_path}")
+        return config_secrets_path
 
 # Example Usage (outside the class)
 # config_path = PathUtils.get_config_path()

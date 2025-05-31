@@ -12,14 +12,17 @@ class Config:
     def __init__(self, config_file: str = 'config.ini'):
 
         self.config = configparser.ConfigParser()
-        # Construct the full path to config.ini
-        # project_root = get_project_root()
-        # config_path = os.path.join(project_root, config_file)
+        self.config_secrets = configparser.ConfigParser()
         config_path = PathUtils.get_config_path()
+        config_secrets_path = PathUtils.get_config_secrets_path()
 
         if not os.path.exists(config_path):
             raise FileNotFoundError(f"Config file not found at {config_path}")
         self.config.read(config_path)
+
+        if not os.path.exists(config_secrets_path):
+            raise FileNotFoundError(f"Config file not found at {config_secrets_path}")
+        self.config_secrets.read(config_secrets_path)
 
     def get_section(self, section):
         """
@@ -34,6 +37,22 @@ class Config:
         """
         if self.config.has_section(section):
             return dict(self.config.items(section))
+        else:
+            return {}
+        
+    def get_secret_section(self, section):
+        """
+        Retrieves a section from the configuration.
+
+        Args:
+            section (str): The name of the section.
+
+        Returns:
+            dict: A dictionary containing the key-value pairs of the section,
+                  or an empty dictionary if the section is not found.
+        """
+        if self.config_secrets.has_section(section):
+            return dict(self.config_secrets.items(section))
         else:
             return {}
 
@@ -52,14 +71,58 @@ class Config:
             Any: The value of the option, converted to the specified type,
                  or the default value if the option or section is not found.
         """
+        if self.config_secrets.has_option(section, option):
+            try:
+                # Use appropriate getter based on type
+                if type is bool:
+                    return self.config_secrets.getboolean(section, option)
+                elif type is int:
+                    return self.config_secrets.getint(section, option)
+                elif type is float:
+                    return self.config_secrets.getfloat(section, option)
+                return self.config_secrets.get(section, option)
+            except ValueError as e:
+                print(f"Warning: Failed to convert secret option '{option}' in section '{section}' to type '{type.__name__}'. Error: {e}. Returning default.")
+                return default
+            
+        if self.config.has_option(section, option):
+            try:
+                if type is bool:
+                    return self.config.getboolean(section, option)
+                elif type is int:
+                    return self.config.getint(section, option)
+                elif type is float:
+                    return self.config.getfloat(section, option)
+                return self.config.get(section, option)
+            except ValueError as e:
+                print(f"Warning: Failed to convert option '{option}' in section '{section}' to type '{type.__name__}'. Error: {e}. Returning default.")
+                return default
+                
+        return default
+        
+    def get_secrets(self, section, option, default=None, type=str):
+        """
+        Retrieves an option from a section, with optional type conversion.
+
+        Args:
+            section (str): The name of the section.
+            option (str): The name of the option.
+            default: The default value to return if the option is not found.
+            type: The data type to convert the option value to (e.g., str, int, float, bool).
+                  Defaults to str.
+
+        Returns:
+            Any: The value of the option, converted to the specified type,
+                 or the default value if the option or section is not found.
+        """
         try:
-            value = self.config.get(section, option)
+            value = self.config_secrets.get(section, option)
             if type is bool:
-                value = self.config.getboolean(section, option)
+                value = self.config_secrets.getboolean(section, option)
             elif type is int:
-                value = self.config.getint(section, option)
+                value = self.config_secrets.getint(section, option)
             elif type is float:
-                value = self.config.getfloat(section, option)
+                value = self.config_secrets.getfloat(section, option)
             return value
         except (configparser.NoSectionError, configparser.NoOptionError):
             return default
@@ -71,7 +134,7 @@ class DatabaseConfig(Config):
     """
     A subclass of Config specifically for database settings.
     """
-    def __init__(self, config_file='config.ini'):
+    def __init__(self, config_file='config.ini', config_secret_file = 'config_secrets.ini'):
         super().__init__(config_file)
         db_section      = 'database'  # Consistent section name
         self.dbname     = self.get(db_section, 'dbname', default='vivarium')
@@ -99,7 +162,7 @@ class WeatherAPIConfig(Config):
     """
     def __init__(self, config_file='config.ini'):
         super().__init__(config_file)
-        api_section = 'api'
+        api_section = 'weather_api'
         self.url = self.get(api_section, 'weather_api_url', default='https://api.weatherapi.com/v1')
         self.api_key = self.get(api_section, 'weather_api_key', default=None)
         self.lat_long = self.get(api_section, 'weather_api_lat_long', default='5.98,116.07')
