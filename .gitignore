@@ -1,7 +1,6 @@
 .vivaenv/
 weather/rawfiles/
 weather/logs/
-weather/config.ini
 .DS_Store
 weather/.DS_Store
 terratium/.DS_Store
@@ -14,3 +13,5 @@ logs/
 ._.DS_Store
 notes/tech_debt.txt
 notes/
+config_secrets.ini
+vivarium_backup.sql
