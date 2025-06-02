@@ -5,16 +5,15 @@ import sys
 import gpiod
 from datetime import datetime
 
-# Adjust path as needed to import your utilities
 # Assuming this file is in vivarium/terrarium/src/controllers
-vivarium_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
+vivarium_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 if vivarium_path not in sys.path:
     sys.path.insert(0, vivarium_path)
 
 from utilities.src.logger import LogHelper
 from utilities.src.database_operations import DatabaseOperations
 from terrarium.src.database.device_status_queries import DeviceStatusQueries
-from terrarium.src.database.device_queries import DeviceQueries # Assuming DeviceQueries is used by status queries
+from terrarium.src.database.device_queries import DeviceQueries
 
 logger = LogHelper.get_logger(__name__)
 
@@ -23,7 +22,7 @@ class BaseDeviceController:
     A base class for controlling devices via GPIO and managing their status
     in the database.
     """
-    def __init__(self, device_id: str, relay_pin: int, consumer_name: str, db_operations: DatabaseOperations):
+    def __init__(self, device_id: int, relay_pin: int, consumer_name: str, db_operations: DatabaseOperations):
         """
         Initializes the base device controller.
 
@@ -128,20 +127,35 @@ class BaseDeviceController:
             raise # Re-raise for calling method to handle
 
     # A common control method for simple ON/OFF devices
-    def toggle_device(self, action: str):
+    def toggle_device(self, action: str, start_tm = None, stop_tm = None):
         """
         Controls the device based on the provided action ('on' or 'off'),
         only performing action if the state needs to change.
         """
+
         if not self.line:
             logger.error(f"GPIO line for {self.consumer_name} not initialized. Cannot control device.")
             return
+        current_datetime = datetime.now()
+        current_time = current_datetime.time()
 
         target_state = None
-        if action.lower() == 'on':
+        if action is None:
+            if start_tm and stop_tm:
+                if start_tm < stop_tm: # e.g., ON 06:00 AM, OFF 06:00 PM (within same day)
+                    if start_tm <= current_time < stop_tm:
+                        target_state = start_tm <= current_time < stop_tm
+                    else:
+                        target_state = False
+                logger.info(f"{self.device_id}: Controlling light based on schedule: Current time {current_time.strftime('%H:%M')}, ON {start_tm.strftime('%H:%M')}, OFF {stop_tm.strftime('%H:%M')}. Desired state: {action}.")
+            else:
+                logger.warning(f"{self.device_id}: Invalid action '{action}' provided. Doing nothing.")
+                return # Exit if invalid action
+        elif action.lower() == 'on':
             target_state = True
         elif action.lower() == 'off':
             target_state = False
+            
         else:
             logger.warning(f"Invalid action: '{action}' for {self.consumer_name}. Must be 'on' or 'off'.")
             return

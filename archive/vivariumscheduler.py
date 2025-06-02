@@ -29,9 +29,9 @@ from weather.fetch_daily_weather import FetchDailyWeather
 from weather.src.database.astro_queries import AstroQueries
 from weather.src.database.database_operations import DatabaseOperations
 
-from terrarium.src.controllers.light_controller import LightController
+from archive.light_controller import LightController
 from terrarium.src.controllers.terrarium_status import TerrariumStatus
-from terrarium.src.controllers.mister_controller import MisterController
+from archive.mister_controller import MisterController
 from terrarium.src.controllers.humidifier_control import HumidiferController
 
 logger = LogHelper.get_logger(__name__)

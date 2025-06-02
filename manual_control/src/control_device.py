@@ -14,8 +14,8 @@ from utilities.src.logger import LogHelper
 from utilities.src.database_operations import DatabaseOperations
 
 # Import specific controllers
-from terrarium.src.controllers.light_controller_v2 import LightControllerV2
-from terrarium.src.controllers.mister_controller_v2 import MisterControllerV2
+from terrarium.src.controllers.light_controller import LightController
+from terrarium.src.controllers.mister_controller import MisterControllerV2
 from terrarium.src.database.device_status_queries import DeviceStatusQueries
 
 logger = LogHelper.get_logger(__name__)
@@ -54,7 +54,7 @@ def main():
 
         if args.device == "light":
             if args.action == "on" or args.action == "off":
-                controller = LightControllerV2(db_operations=db_operations)
+                controller = LightController(db_operations=db_operations)
                 logger.info(f"Manually turning LIGHT [{str(args.action).upper()}].")
                 controller.control_light(args.action)
             elif args.action == "status":

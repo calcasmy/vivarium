@@ -15,7 +15,7 @@ if vivarium_path not in sys.path:
 from utilities.src.logger import LogHelper
 from utilities.src.config import MisterConfig, SensorConfig # Assuming TempConfig holds sensor thresholds
 from utilities.src.database_operations import DatabaseOperations # For type hinting
-from terrarium.src.controllers.mister_controller_v2 import MisterControllerV2
+from terrarium.src.controllers.mister_controller import MisterControllerV2
 from scheduler.src.device_scheduler_base import DeviceSchedulerBase # Import the base scheduler
 from terrarium.src.database.sensor_data_queries import SensorDataQueries
 from terrarium.src.database.device_status_queries import DeviceStatusQueries
@@ -49,7 +49,7 @@ class MisterScheduler(DeviceSchedulerBase):
         for mister activation based on thresholds and intervals.
         This method should be called periodically (e.g., every 5 minutes).
         """
-        logger.info("Checking environmental data for automatic mister control.")
+        # logger.info("Checking environmental data for automatic mister control.")
         try:
             # 1. Fetch latest humidity from DB
             sensor_readings = self.sensor_data_queries.get_latest_readings_by_sensor_id(sensor_id = sensor_config.HTU21D)
@@ -73,7 +73,7 @@ class MisterScheduler(DeviceSchedulerBase):
                 logger.warning("Humidity data not found in latest sensor reading. Cannot perform mister check.")
                 return
 
-            logger.info(f"Current humidity: {current_humidity}%")
+            # logger.info(f"Current humidity: {current_humidity}%")
 
             # 2. Mister Control Logic
             self._handle_mister_activation(current_humidity)
@@ -139,5 +139,5 @@ class MisterScheduler(DeviceSchedulerBase):
                     job_id='run_mister_now'
                 )
         else:
-            logger.info("Humidity is above threshold. Mister not needed.")
+            logger.info("Humidity is above threshold. Misting not required.")
 

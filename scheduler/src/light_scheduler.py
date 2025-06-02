@@ -2,7 +2,7 @@
 
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 from apscheduler.schedulers.blocking import BlockingScheduler
 
 # Assuming this file is in vivarium/scheduler/src/
@@ -38,14 +38,9 @@ class LightScheduler(DeviceSchedulerBase):
         self.astro_queries = AstroQueries(self.db_operations)
         logger.info("LightScheduler initialized.")
 
-    def schedule_daily_lights(self):
-        """
-        Updates the daily light schedule based on fetched astro data or configured defaults.
-        This method should be called periodically (e.g., once a day after weather fetch).
-        """
-        logger.info("Updating terrarium lights schedule.")
-        
+    def _fetch_sunrise_sunset(self) -> dict:
         today_str = datetime.now().date().strftime('%Y-%m-%d')
+        yesterday = (datetime.now().date() - timedelta(days=1)).strftime('%Y-%m-%d')
         location_id = 1 # Consider making this configurable or dynamic
 
         sunrise_time_to_schedule = None
@@ -53,33 +48,50 @@ class LightScheduler(DeviceSchedulerBase):
 
         try:
             # Attempt to fetch astro data from DB
-            astro_data = self.astro_queries.get_sunrise_sunset(location_id, today_str)
+            astro_data = self.astro_queries.get_sunrise_sunset(location_id, yesterday)
 
             if astro_data and astro_data.get('sunrise') and astro_data.get('sunset'):
                 db_sunrise_str = astro_data['sunrise']
                 db_sunset_str = astro_data['sunset']
-                logger.info(f"Using fetched sunrise/sunset for {today_str}: Sunrise: {db_sunrise_str}, Sunset: {db_sunset_str}")
+                logger.info(f"Using fetched sunrise/sunset for {yesterday}: Sunrise: {db_sunrise_str}, Sunset: {db_sunset_str}")
 
-                sunrise_dt_obj = datetime.strptime(db_sunrise_str.split('\t')[0].strip(), '%I:%M %p')
-                sunset_dt_obj = datetime.strptime(db_sunset_str.split('\t')[0].strip(), '%I:%M %p')
+                sunrise_time_to_schedule = datetime.strptime(db_sunrise_str.split('\t')[0].strip(), '%I:%M %p').time()
+                sunset_time_to_schedule = datetime.strptime(db_sunset_str.split('\t')[0].strip(), '%I:%M %p').time()
                 
-                sunrise_time_to_schedule = sunrise_dt_obj.time()
-                sunset_time_to_schedule = sunset_dt_obj.time()
+                # sunrise_time_to_schedule = sunrise_dt_obj.time()
+                # sunset_time_to_schedule = sunset_dt_obj.time()
 
             else:
-                logger.warning(f"Could not retrieve complete sunrise/sunset data from database for {today_str}. Using default times from config.")
+                logger.warning(f"Could not retrieve complete sunrise/sunset data from database for {yesterday}. Using default times from config.")
                 # Fallback to defaults from LightConfig
-                sunrise_dt_obj = datetime.strptime(light_config.lights_on.split('\t')[0].strip(), '%I:%M %p')
-                sunset_dt_obj = datetime.strptime(light_config.lights_off.split('\t')[0].strip(), '%I:%M %p')
+                sunrise_time_to_schedule = datetime.strptime(light_config.lights_on.split('\t')[0].strip(), '%I:%M %p').time()
+                sunset_time_to_schedule = datetime.strptime(light_config.lights_off.split('\t')[0].strip(), '%I:%M %p').time()
                 
-                sunrise_time_to_schedule = sunrise_dt_obj.time()
-                sunset_time_to_schedule = sunset_dt_obj.time()
+                # sunrise_time_to_schedule = sunrise_dt_obj.time()
+                # sunset_time_to_schedule = sunset_dt_obj.time()
 
         except Exception as e:
             logger.error(f"Error fetching/parsing astro data or config defaults: {e}. Using hardcoded fallback times.")
             # Fallback to hardcoded times if config parsing also fails as a last resort
             sunrise_time_to_schedule = datetime.strptime("06:00 AM", '%I:%M %p').time()
             sunset_time_to_schedule = datetime.strptime("06:00 PM", '%I:%M %p').time()
+
+        return {
+            'sunrise_time_to_schedule': sunrise_time_to_schedule, 
+            'sunset_time_to_schedule': sunset_time_to_schedule
+        }
+
+    def schedule_daily_lights(self):
+        """
+        Updates the daily light schedule based on fetched astro data or configured defaults.
+        This method should be called periodically (e.g., once a day after weather fetch).
+        """
+        logger.info("Updating terrarium lights schedule.")
+        
+        sun_schedule = self._fetch_sunrise_sunset()
+
+        sunrise_time_to_schedule = sun_schedule['sunrise_time_to_schedule']
+        sunset_time_to_schedule = sun_schedule['sunset_time_to_schedule']
         
         # Now, schedule the jobs using the determined times
         if sunrise_time_to_schedule and sunset_time_to_schedule:
@@ -104,4 +116,20 @@ class LightScheduler(DeviceSchedulerBase):
             )
         else:
             logger.critical("Failed to determine valid sunrise/sunset times. Light schedule not set.")
+
+        if sunrise_time_to_schedule and sunset_time_to_schedule:
+            logger.info(f"Determined daily light schedule: ON {sunrise_time_to_schedule.strftime('%H:%M:%S')}, OFF {sunset_time_to_schedule.strftime('%H:%M:%S')}")
+
+            # 1. Update the LightController's internal schedule times
+            self.light_controller.update_schedule_time(sunrise_time_to_schedule, sunset_time_to_schedule)
+            
+            # 2. Immediately check and set the light state based on the *new* schedule
+            # This calls control_light with action=None, prompting it to use its schedule logic
+            logger.info(f"Triggering immediate light state check based on updated schedule.")
+            self.light_controller.control_light(action=None)
+
+            logger.info("Daily light ON/OFF cron jobs scheduled/updated.")
+        else:
+            logger.critical("Failed to determine valid sunrise/sunset times. Light schedule not set for today.")
+
 
