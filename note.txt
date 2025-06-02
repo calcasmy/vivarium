@@ -48,7 +48,7 @@ sudo nano /etc/systemd/system/vivarium-scheduler.service
     Group=ibis
     Environment="PYTHONPATH=/home/ibis/vivarium/.vivaenv/lib/python3.11/site-packages:/home/ibis/vivarium/"
     WorkingDirectory=/home/ibis/vivarium/
-    ExecStart=/home/ibis/vivarium/.vivaenv/bin/python /home/ibis/vivarium/scheduler/src/vivariumscheduler.py
+    ExecStart=/home/ibis/vivarium/.vivaenv/bin/python /home/ibis/vivarium/scheduler/src/vivarium_scheduler.py
     Restart=on-failure
     StandardOutput=journal
     StandardError=journal
