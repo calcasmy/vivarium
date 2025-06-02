@@ -167,7 +167,7 @@ class WeatherAPIConfig(Config):
         self.api_key = self.get(api_section, 'weather_api_key', default=None)
         self.lat_long = self.get(api_section, 'weather_api_lat_long', default='5.98,116.07')
         self.location_name = self.get(api_section, 'weather_loc_kinabalu', default='Gunung Kinabalu')
-
+        self.fetch_interval = self.get(api_section, 'weather_fetch_interval', default=3, type=int)
 
 class FileConfig(Config):
     """

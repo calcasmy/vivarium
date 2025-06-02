@@ -20,7 +20,7 @@ if vivarium_path not in sys.path:
 
 # Importing utilities package
 from utilities.src.logger import LogHelper
-from utilities.src.config import TimeConfig
+from utilities.src.config import WeatherAPIConfig
 from utilities.src.database_operations import DatabaseOperations
 
 # PRIMARY CHANGE: Import the NEW TerrariumSensorReader
@@ -48,7 +48,7 @@ class VivariumScheduler:
         self.scheduler = BlockingScheduler()
         self.scheduler.add_listener(self.job_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
 
-        self.time_config = TimeConfig()
+        self.weather_config = WeatherAPIConfig()
 
         # Centralized Database Operations
         self.db_operations = DatabaseOperations()
@@ -96,7 +96,7 @@ class VivariumScheduler:
 
             # -- Retry logic for 'fetch daily weather
             if event.job_id == 'fetch_weather_daily':
-                retry_interval_hours = self.time_config.get('weather_fetch_interval', default=2, type = int)
+                retry_interval_hours = self.weather_config.get('weather_fetch_interval', default=2, type = int)
                 retry_time = datetime.now() + timedelta(hours = retry_interval_hours)
                 self.scheduler.add_job(
                     self._run_external_script,
