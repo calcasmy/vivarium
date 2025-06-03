@@ -12,14 +12,11 @@ if vivarium_path not in sys.path:
 
 from assets.humidifier.src import vesync
 from assets.humidifier.src.vesyncclassic300s import VeSyncHumidClassic300S
+from utilities.src.config import HumidifierConfig
 
-# Replace with your VeSync account details
-USERNAME = "technoatomic@gmail.com"
-PASSWORD = "Cold_Snow#25"
+humid_config = HumidifierConfig()
 
 class HumidiferController:
-    def __init__(self):
-        pass
 
     @staticmethod
     def script_path() -> str:
@@ -29,7 +26,7 @@ class HumidiferController:
 def control_vivarium_humidifier():
     """Connects to VeSync, finds a Classic 300S, and allows control."""
     try:
-        manager = vesync.VeSync(USERNAME, PASSWORD)
+        manager = vesync.VeSync(humid_config.username, humid_config.password)
         login_success = manager.login()
         if login_success:
             print("Successfully logged into VeSync.")

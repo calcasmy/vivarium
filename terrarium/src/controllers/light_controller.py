@@ -26,7 +26,7 @@ class LightController(BaseDeviceController):
         """
         Initializes the LightControler object.
         """
-        self.device_id = 1
+        self.device_id = light_config.device_id
         self.relay_pin = int(light_config.lights_control_pin)
         self.consumer_name = 'light_control' # Unique consumer name for GPIO
         self.on_time: time = None

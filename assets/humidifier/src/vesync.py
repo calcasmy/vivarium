@@ -54,19 +54,10 @@ class VeSync:  # pylint: disable=function-redefined
         self._energy_update_interval = DEFAULT_ENER_UP_INT
         self._energy_check = True
         self._dev_list = {}
-        self.outlets = []
-        self.switches = []
         self.fans = []
-        self.bulbs = []
-        self.scales = []
-        self.kitchen = []
 
         self._dev_list = {
-            'fans': self.fans,
-            'outlets': self.outlets,
-            'switches': self.switches,
-            'bulbs': self.bulbs,
-            'kitchen': self.kitchen
+            'fans': self.fans
         }
 
         if isinstance(time_zone, str) and time_zone:

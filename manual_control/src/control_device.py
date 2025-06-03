@@ -11,14 +11,19 @@ if vivarium_path not in sys.path:
 
 # Import shared utilities
 from utilities.src.logger import LogHelper
+from utilities.src.config import LightConfig, MisterConfig, HumidifierConfig
 from utilities.src.database_operations import DatabaseOperations
 
 # Import specific controllers
 from terrarium.src.controllers.light_controller import LightController
 from terrarium.src.controllers.mister_controller import MisterControllerV2
+from terrarium.src.controllers.humidifier_controller import HumidiferControllerV2
 from terrarium.src.database.device_status_queries import DeviceStatusQueries
 
 logger = LogHelper.get_logger(__name__)
+lightconfig = LightConfig()
+misterconfig = MisterConfig()
+humidconfig = HumidifierConfig()
 
 def main():
     parser = argparse.ArgumentParser(
@@ -58,7 +63,7 @@ def main():
                 logger.info(f"Manually turning LIGHT [{str(args.action).upper()}].")
                 controller.control_light(args.action)
             elif args.action == "status":
-                _get_device_status(consumer_name = args.device, device_id = 1, db_operations = db_operations)
+                _get_device_status(consumer_name = args.device, device_id = lightconfig.device_id, db_operations = db_operations)
             else:
                 logger.error(f"Invalid action '{args.action}' for light device.")
 
@@ -78,7 +83,27 @@ def main():
                 controller.control_mister("off")
                 logger.info("Mister OFF after duration.")
             elif args.action == "status":
-                _get_device_status(consumer_name = args.device, device_id = 2, db_operations = db_operations)
+                _get_device_status(consumer_name = args.device, device_id = misterconfig.device_id, db_operations = db_operations)
+            else:
+                logger.error(f"Invalid action '{args.action}' for mister device.")
+
+        elif args.device == "humidifer":
+            controller = HumidiferControllerV2(db_operations = db_operations)
+            if args.action == "on" or args.action == "off":
+                logger.info(f"Manually turning HUMIDIFIER [{str(args.action).upper()}].")
+                controller.control_humidifier(args.action)
+            elif args.action == "run_for":
+                if args.duration is None or args.duration <= 0:
+                    logger.error("Error: --duration must be provided and be a positive integer for 'run_for' action.")
+                    return
+                logger.info(f"Manually running MISTER for {args.duration} seconds.")
+                controller.control_humidifier("on")
+                logger.info("Humidifier ON.")
+                time.sleep(args.duration) # This script will block here
+                controller.control_humidifier("off")
+                logger.info("Humidifer OFF after duration.")
+            elif args.action == "status":
+                _get_device_status(consumer_name = args.device, device_id = humidconfig.device_id, db_operations = db_operations)
             else:
                 logger.error(f"Invalid action '{args.action}' for mister device.")
 

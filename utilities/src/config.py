@@ -252,6 +252,7 @@ class MisterConfig(Config):
         self.humidity_threshold = self.get(mister_section, 'mister.hu_threshold', default = 80, type = int)
         self.mister_duration = self.get(mister_section, 'duration', default = 30, type = int)
         self.mister_interval = self.get(mister_section, 'interval', default = 360, type = int)
+        self.device_id = self.get(mister_section, 'device_id', default = 2, type = int)
 
 class LightConfig(Config):
     '''
@@ -263,6 +264,7 @@ class LightConfig(Config):
         self.lights_control_pin = self.get(light_section, 'growlight.controlpin', default = 20, type = int)
         self.lights_on = self.get(light_section, 'growlight.on', default = "6:00 AM")
         self.lights_off = self.get(light_section, 'growlight.off', default = "6:00 PM")
+        self.device_id = self.get(light_section, 'growlight.device_id', default = 1, type = int)
 
 class HumidifierConfig(Config):
     '''
@@ -273,6 +275,13 @@ class HumidifierConfig(Config):
         humidifier_section = 'humidifier'
         self.username = self.get(humidifier_section, 'humidifier.username', default = 'username', type = str)
         self.password = self.get(humidifier_section, 'humidifier.password', default = 'password', type = str)
+        self.mode = self.get(humidifier_section, 'humidifier.mode', default = 'manual', type = str)
+        self.device_id = self.get(humidifier_section, 'humidifier.device_id', default = 3, type = int)
+        self.runtime = self.get(humidifier_section, 'humidifier.runtime', default = 30, type = int)
+        self.mistlevel_low = self.get(humidifier_section, 'humidifier.mistlevel_low', default = 1, type = int)
+        self.mislevel_medium = self.get(humidifier_section, 'humidifier.mislevel_medium', default = 5, type = int)
+        self.mistlevel_high = self.get(humidifier_section, 'humidifier.mistlevel_high', default = 9, type = int)
+        
 
 class SensorConfig(Config):
     """

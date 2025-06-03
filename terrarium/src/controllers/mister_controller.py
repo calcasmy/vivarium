@@ -23,7 +23,7 @@ class MisterControllerV2(BaseDeviceController):
     Controls the vivarium mister using GPIO and database interaction.
     Inherits common logic from BaseDeviceController.
     """
-    def __init__(self, device_id = 2, db_operations: DatabaseOperations = None):
+    def __init__(self, device_id = mister_config.device_id, db_operations: DatabaseOperations = None):
         relay_pin = int(mister_config.mister_control_pin)
         self.device_id = device_id
         consumer_name = 'mister_control' # Unique consumer name for GPIO
