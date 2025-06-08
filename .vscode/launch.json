@@ -74,7 +74,23 @@
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
             "justMyCode": true
-        }
+        },
         // Add more configurations as needed for other actions/devices
+
+        {
+            "name": "DB Setup --isremote",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/db_setup.py",
+            "args": [
+                "--isremote", // Use this for remote setup
+                // "--host", "your.remote.db.server.com", // Uncomment and modify to override host
+                // "--db_user", "my_remote_user", // Uncomment and modify to override app user
+                // "--super_password", "YOUR_SUPERUSER_PASSWORD_HERE" // Only for one-time manual entry. Remove for config.
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
     ]
 }

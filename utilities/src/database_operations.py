@@ -1,5 +1,6 @@
 # src/database/database_operations.py
 import psycopg2
+from psycopg2 import OperationalError
 from typing import Optional, List, Dict
 from utilities.src.config import DatabaseConfig
 from utilities.src.logger import LogHelper
@@ -7,23 +8,32 @@ from utilities.src.logger import LogHelper
 logger = LogHelper.get_logger(__name__)
 db_config = DatabaseConfig()
 
-
-ogger = LogHelper.get_logger(__name__)
-
 class DatabaseOperations:
     def __init__(self):
-        self.postgres_config = db_config.postgres
+        """
+        Initializes the DatabaseOperations class.
+        """
         self.conn = None
+        self.postgres_config = db_config.postgres
 
     def connect(self) -> None:
         """Connects to the PostgreSQL database."""
+        if self.conn:
+            logger.info("Already connected to the database.")
+            return
+        
         try:
             self.conn = psycopg2.connect(**self.postgres_config)
-            logger.info("Successfully connected to the database.")
+            logger.info(f"Successfully connected to database '{self.postgres_config('dbname', 'N/A')}'.")
+        except OperationalError as e:
+            logger.error(f"FATAL: error connecting to database '{self.postgres_config('dbname', 'N/A')}'"
+                         f"Please check connection parameters, database existance and server status. Error: {e}")
+            self.conn = None
+            raise
         except psycopg2.Error as e:
             logger.error(f"Error connecting to the database: {e}")
             self.conn = None
-            raise  # Re-raise to be handled in main
+            raise
 
     def close(self) -> None:
         """Closes the connection to the PostgreSQL database."""
@@ -97,31 +107,7 @@ class DatabaseOperations:
         if not self.conn:
             logger.error("Cannot execute query. No database connection.")
             return None
-
-        # try:
-        #     with self.conn.cursor() as cur:
-        #         cur.execute(query, params)
-        #         if cur.description:  # Check if there's a result description
-        #             columns = [desc[0] for desc in cur.description]
-        #         else:
-        #             columns = []
-        #         self.conn.commit()
-        #         if "id" in columns:
-        #             return cur.fetchone()[0]
-        #         else:
-        #             return None
-        # except psycopg2.Error as e:
-        #     logger.error(f"Error executing query: {e} | Query: {query} | Params: {params}")
-        #     self.conn.rollback()
-        #     return None
-        # except Exception as e:
-        #     logger.error(
-        #         f"An unexpected error occurred: {e} | Query: {query} | Params: {params}"
-        #     )
-        #     self.conn.rollback()
-        #     return None
         
-
         try:
             with self.conn.cursor() as cur:
                 cur.execute(query, params)

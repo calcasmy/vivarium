@@ -27,7 +27,7 @@ humidconfig = HumidifierConfig()
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Manually control Vivarium devices (lights, mister)."
+        description="Manually control Vivarium devices."
     )
     parser.add_argument(
         "--device",
