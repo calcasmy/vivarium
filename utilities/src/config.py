@@ -122,14 +122,14 @@ class DatabaseConfig(Config):
         db_section      = 'database'  # Consistent section name
 
         # Main application database user (for connecting to Vivarium DB)
-        self.user = self.get(db_section, 'user', default='ibis')
+        self.user = self.get(db_section, 'user', default='vivarium')
         self.password = self.get(db_section, 'password', default='default_app_password') # Ensure this comes from secrets
         self.dbname = self.get(db_section, 'dbname', default='vivarium')
         self.host = self.get(db_section, 'host', default='localhost')
         self.port = self.get(db_section, 'port', default=5432, target_type=int)
 
         # Remote user (e.g., 'calcasmy' for general remote access or setup)
-        self.remote_user = self.get(db_section, 'remote_user', default='calcasmy')
+        self.remote_user = self.get(db_section, 'remote_user', default='vivarium')
         self.remote_password = self.get(db_section, 'remote_password', default='') # Remote user password from secrets
         self.remote_host = self.get(db_section, 'remote_host', default='192.168.6872')
         self.remote_dbname = self.get(db_section, 'remote_dbname', default='vivarium')

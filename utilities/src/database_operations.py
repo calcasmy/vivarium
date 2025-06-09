@@ -24,9 +24,9 @@ class DatabaseOperations:
         
         try:
             self.conn = psycopg2.connect(**self.postgres_config)
-            logger.info(f"Successfully connected to database '{self.postgres_config('dbname', 'N/A')}'.")
+            logger.info(f"Successfully connected to database '{self.postgres_config.get('dbname', 'N/A')}'.")
         except OperationalError as e:
-            logger.error(f"FATAL: error connecting to database '{self.postgres_config('dbname', 'N/A')}'"
+            logger.error(f"FATAL: error connecting to database '{self.postgres_config.get('dbname', 'N/A')}'"
                          f"Please check connection parameters, database existance and server status. Error: {e}")
             self.conn = None
             raise

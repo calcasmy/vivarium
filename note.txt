@@ -81,4 +81,6 @@ directory mask = 0777
 public = no
 valid users = ibis
 
+viv6r1um@gmail.com
+
 

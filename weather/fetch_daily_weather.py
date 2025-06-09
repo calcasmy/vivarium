@@ -229,9 +229,9 @@ def main():
     db_operations.connect()
     try:
         get_weather_data = FetchDailyWeather(db_operations)  # Pass the DatabaseOperations instance
-        get_weather_data.fetch_and_store_weather_data()
+        # get_weather_data.fetch_and_store_weather_data()
         # Alternateive method calls if data for a specific date (or) date, location (lattitude and longitude) is required
-        # get_weather_data.fetch_and_store_weather_data('2025-05-15',)
+        get_weather_data.fetch_and_store_weather_data('2025-06-08',)
         # get_weather_data.fetch_and_store_weather_data('2025-05-18', '5.98,116.07')
     except Exception as e:
         logger.exception(f"An unexpected error occurred: {e}")

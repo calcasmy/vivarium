@@ -75,21 +75,24 @@
             "console": "integratedTerminal",
             "justMyCode": true
         },
-        // Add more configurations as needed for other actions/devices
-
         {
-            "name": "DB Setup --isremote",
+            "name": "Debug db_setup.py (Local)",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/db_setup.py",
-            "args": [
-                "--isremote", // Use this for remote setup
-                // "--host", "your.remote.db.server.com", // Uncomment and modify to override host
-                // "--db_user", "my_remote_user", // Uncomment and modify to override app user
-                // "--super_password", "YOUR_SUPERUSER_PASSWORD_HERE" // Only for one-time manual entry. Remove for config.
-            ],
-            "cwd": "${workspaceFolder}",
-            "console": "integratedTerminal",
+            "program": "${workspaceFolder}/db_setup.py", // Assumes db_setup.py is at the root
+            "console": "integratedTerminal", // Important for interactive prompts
+            "cwd": "${workspaceFolder}",     // Ensures script runs from project root
+            "args": [],                      // No arguments for local setup
+            "justMyCode": true
+        },
+        {
+            "name": "Debug db_setup.py (Remote)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/db_setup.py", // Assumes db_setup.py is at the root
+            "console": "integratedTerminal", // Important for interactive prompts
+            "cwd": "${workspaceFolder}",     // Ensures script runs from project root
+            "args": ["--isremote"],          // Pass the --isremote argument
             "justMyCode": true
         }
     ]

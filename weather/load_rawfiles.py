@@ -1,4 +1,3 @@
-# src/fetch_daily_weather.py
 import os
 import sys
 import os.path
@@ -33,7 +32,7 @@ db_config = DatabaseConfig()
 
 logger = LogHelper.get_logger(__name__)
 
-class LoadRawfiels:
+class LoadRawfiles:
     """
     A class to store weather data from JSON files in local folder.
     """
@@ -106,22 +105,40 @@ class LoadRawfiels:
         else:
             try:
                 location_data = weather_data.get('location', {})
-                latitude = location_data.get('lat')
-                longitude = location_data.get('lon')
+                
+                # Retrieve current latitude and longitude from the raw data
+                current_latitude = location_data.get('lat')
+                current_longitude = location_data.get('lon')
 
-                if latitude is None or longitude is None:
-                    logger.error("Latitude or Longitude is missing. Skipping location and subsequent data processing.")
+                # --- START OF CONDITIONAL MODIFICATION ---
+                # Only update lat/lon if they match the specified values
+                if current_latitude == 5.98 and current_longitude == 116.07:
+                    latitude_to_use = 5.983
+                    longitude_to_use = 116.067
+                    logger.info(f"Updating lat/lon from (5.98, 116.07) to ({latitude_to_use}, {longitude_to_use}).")
+                else:
+                    latitude_to_use = current_latitude
+                    longitude_to_use = current_longitude
+                    logger.info(f"Using existing lat/lon: ({latitude_to_use}, {longitude_to_use}).")
+                
+                # Update the location_data dictionary with the determined values
+                location_data['lat'] = latitude_to_use
+                location_data['lon'] = longitude_to_use
+                # --- END OF CONDITIONAL MODIFICATION ---
+
+                if latitude_to_use is None or longitude_to_use is None:
+                    logger.error("Latitude or Longitude is missing after conditional check. Skipping location and subsequent data processing.")
                     return None
 
-                location_id = self.location_db.get_location_id(latitude, longitude)
+                location_id = self.location_db.get_location_id(latitude_to_use, longitude_to_use)
                 if not location_id:
                     location_id = self.location_db.insert_location_data(location_data)
                     if location_id is None:
                         logger.error("Failed to insert location data.")
                         return None
-                    logger.info(f"Inserted new location with ID: {location_id}")
+                    logger.info(f"Inserted new location with ID: {location_id} using lat/lon ({latitude_to_use}, {longitude_to_use}).")
                 else:
-                    logger.info(f"Location already exists with ID: {location_id}")
+                    logger.info(f"Location already exists with ID: {location_id} for lat/lon ({latitude_to_use}, {longitude_to_use}).")
                 return location_id
             except Exception as e:
                 logger.exception(f"An unexpected error occurred: {e}")
@@ -198,7 +215,7 @@ class LoadRawfiels:
         """
         try:
             file_config = FileConfig()
-            _directory = os.path.join(os.path.dirname(LoadRawfiels.script_path()), file_config.raw_folder)
+            _directory = os.path.join(os.path.dirname(LoadRawfiles.script_path()), file_config.raw_folder)
 
             if not os.path.isdir(_directory):
                 print(f"Error: Folder '{_directory}' does not exist or is not a directory.")
@@ -224,7 +241,7 @@ def main():
     db_operations = DatabaseOperations()
     db_operations.connect()
     try:
-        get_weather_data = LoadRawfiels(db_operations)  # Pass the DatabaseOperations instance
+        get_weather_data = LoadRawfiles(db_operations)  # Pass the DatabaseOperations instance
         get_weather_data._persist_weather_data()
     except Exception as e:
         logger.exception(f"An unexpected error occurred: {e}")
