@@ -139,6 +139,12 @@ class DatabaseConfig(Config):
         self.superuser_password = self.get(db_section, 'super_password', default='') # Superuser password from secrets
         self.superuser_dbname = self.get(db_section, 'super_dbname', default='postgres')
 
+        #supabase configurations
+        self.supabase4_user = self.get(db_section, 'supabaseipv4_user', default = None)
+        self.supabase4_password = self.get(db_section, 'supabaseipv4_password', default = None)
+        self.supabase4_host = self.get(db_section, 'supabaseipv4_host', default = None)
+        self.supabase4_port = self.get(db_section, 'supabaseipv4_port', default = None)
+
         # self.sslmode = self.get(db_section, 'sslmode', default='require') # Removed sslmode
 
     @property
@@ -173,6 +179,17 @@ class DatabaseConfig(Config):
             'port': self.port,
             'password': self.remote_password,
             'dbname': self.remote_dbname
+        }
+    
+    @property
+    def supabase(self):
+        """Return a dictonary of SupaBase connection parameters."""
+        return {
+            'user': self.supabase4_user,
+            'host': self.supabase4_host,
+            'port': self.supabase4_port,
+            'password': self.supabase4_password,
+            'dbname': self.dbname
         }
 
 class WeatherAPIConfig(Config):
@@ -264,7 +281,7 @@ class MisterConfig(Config):
     '''
         A subclass for Mister Settings
     '''
-    def __init__(self, config_file = 'config.ini'):
+    def __init__(self):
         super().__init__()
         mister_section = 'mister'
         self.mister_control_pin = self.get(mister_section, 'controlpin', default = 21, target_type = int)
@@ -277,7 +294,7 @@ class LightConfig(Config):
     '''
         A subclass for Light Settings
     '''
-    def __init__(self, config_file = 'config.ini'):
+    def __init__(self):
         super().__init__()
         light_section = 'growlight'
         self.lights_control_pin = self.get(light_section, 'controlpin', default = 20, target_type = int)
@@ -289,7 +306,7 @@ class HumidifierConfig(Config):
     '''
     A subclass for Humidifier Settings
     '''
-    def __init__(self, config_file = 'config.ini'):
+    def __init__(self):
         super().__init__()
         humidifier_section = 'humidifier'
         self.username = self.get(humidifier_section, 'username', default = 'username', target_type = str)
@@ -306,7 +323,22 @@ class SensorConfig(Config):
     """
     A subclass for Sensor IDs
     """
-    def __init__(self, config_file = 'config.ini'):
+    def __init__(self):
         super().__init__()
         sensor_section = 'sensor'
         self.HTU21D = self.get(sensor_section, 'HTU21D-F', default = 1, target_type = int)
+
+
+class MQTTConfig(Config):
+    """
+    A subclass for MQTT communication
+    """
+    def __init__(self):
+        super().__init__()
+        mqtt_section = 'hivemqtt'
+        self.MQTT_BROKER        = self.get(mqtt_section, 'MQTT_BROKER', default = None, target_type = str)
+        self.MQTT_PORT          = self.get(mqtt_section, 'MQTT_PORT', default = None, target_type = str)
+        self.MQTT_USERNAME      = self.get(mqtt_section, 'MQTT_USERNAME', default = None, target_type = str)
+        self.MQTT_PASSWORD      = self.get(mqtt_section, 'MQTT_PASSWORD', default = None, target_type = str)
+        self.DATA_TOPIC         = self.get(mqtt_section, 'DATA_TOPIC_PUB', default = None, target_type = str)
+        self.COMMAND_TOPIC      = self.get(mqtt_section, 'COMMAND_TOPIC_SUB', default = None, target_type = str)

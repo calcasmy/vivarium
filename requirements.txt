@@ -5,3 +5,4 @@ adafruit-blinka
 rpi.gpio
 smbus2
 requests
+paho-mqtt
