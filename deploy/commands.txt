@@ -1,0 +1,74 @@
+--- Vivarium Orchestrator Commands ---
+This document outlines various command-line instructions to run the orchestrator.py script for database setup and data loading.
+
+Prerequisites:
+Ensure your Python environment is active and all necessary dependencies are installed.
+You must run these commands from the vivarium/ project root directory.
+
+1. Database Setup Only
+    Purpose: To set up or re-initialize the database schema without loading any data. This will create the necessary users, databases, and tables.
+
+    1.1 PostgreSQL Local Setup
+        Description: Configures a PostgreSQL database on your local machine.
+        Command:
+        -- -- Bash -- --
+                python deploy/src/orchestrator.py --postgres --local
+    
+    1.2 PostgreSQL Remote Setup
+        Description: Configures a PostgreSQL database on a remote server. Ensure your config.ini and config_secrets.ini are correctly set for remote connection details.
+        Command:
+        -- Bash --
+                python deploy/src/orchestrator.py --postgres --remote
+    
+    1.3 Supabase Setup
+        Description: Configures a Supabase project. Supabase is a cloud service; any specified 'local' connection type will be treated as remote by the Supabase setup strategy.
+        Command:
+        -- Bash --
+        python deploy/src/orchestrator.py --supabase
+        # Alternatively, explicitly specify remote connection (behavior is the same for Supabase):
+                python deploy/src/orchestrator.py --supabase --remote
+    
+    1.4 Other Database Type Setup (e.g., Oracle, MongoDB)
+        Description: Attempts to configure a database type other than PostgreSQL or Supabase. This requires a corresponding setup strategy (e.g., OracleSetup, MongoDBSySetup) to be fully implemented in your deploy/src/database/ directory.
+        Command:
+        -- Bash --
+                python deploy/src/orchestrator.py --other oracle --local
+        # Replace 'oracle' with your desired database type string
+
+2. Data Loading Only (Skip Database Setup)
+    Purpose: To load data into an already existing and configured database. This explicitly tells the orchestrator to skip the database setup phase.
+
+    2.1 Load Raw JSON Data
+        Description: Loads raw JSON climate data files from the directory specified by FileConfig.RAW_WEATHER_DATA_PATH (defined in your utilities/src/config.py) into the database.
+        Command:
+        -- Bash --
+                python deploy/src/orchestrator.py --load-json-data --skip-db-setup
+    
+    2.2 Load Data from a Database Dump
+        Description: Loads data from a specified SQL database dump file (e.g., created by pg_dump for PostgreSQL). This requires the appropriate data loader (e.g., PostgresDataLoader) to handle dump restoration.
+        Important: Replace /path/to/your/db_dump.sql with the actual absolute path to your database dump file.
+        Command:
+        -- Bash --
+                python deploy/src/orchestrator.py --load-db-dump /path/to/your/db_dump.sql --skip-db-setup
+
+3. Database Setup and Data Loading (Combined Operations)
+    Purpose: To perform a complete end-to-end process: first, set up the database (if not already done), and then load data into it.
+
+    3.1 PostgreSQL Local Setup and Load Raw JSON Data
+        Description: Sets up a local PostgreSQL database (creating users, database, and schema) and then proceeds to load raw JSON climate data files.
+        Command:
+        -- Bash --
+                python deploy/src/orchestrator.py --postgres --local --load-json-data
+    
+    3.2 PostgreSQL Local Setup and Load Data from a Database Dump
+        Description: Sets up a local PostgreSQL database and then loads data from a specified SQL dump file.
+        Important: Replace /path/to/your/db_dump.sql with the actual absolute path to your database dump file.
+        Command:
+        -- Bash --
+                python deploy/src/orchestrator.py --postgres --local --load-db-dump /path/to/your/db_dump.sql
+    
+    3.3 Supabase Setup and Load Raw JSON Data
+        Description: Sets up your Supabase project (assuming it's configured for access) and then loads raw JSON climate data.
+        Command:
+        -- Bash --
+                python deploy/src/orchestrator.py --supabase --load-json-data
