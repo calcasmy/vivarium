@@ -3,11 +3,7 @@ import os
 import sys
 import configparser
 
-# from src.utilities.path_utils import get_project_root
 from utilities.src.path_utils import PathUtils
-# from utilities.src.logger import LogHelper
-
-# logger = LogHelper.get_logger(__name__)
 
 class Config:
     """
@@ -19,17 +15,14 @@ class Config:
         self.config = configparser.ConfigParser()
         self.config_secrets = configparser.ConfigParser()
 
-        config_path = PathUtils.get_config_path()
-        if not os.path.exists(config_path):
-            # logger.critical(f"FATAL: Main config file not found at {config_path}")
-            raise FileNotFoundError(f"Config file not found at {config_path}")
-        self.config.read(config_path)
+        self._load_config_file(self.config, PathUtils.get_config_path(), config_file)
+        self._load_config_file(self.config_secrets, PathUtils.get_config_secrets_path(), config_secrets_file)
 
-        config_secrets_path = PathUtils.get_config_secrets_path()
-        if not os.path.exists(config_secrets_path):
-            # logger.critical(f"FATAL: Main config file not found at {config_path}")
-            raise FileNotFoundError(f"secrets config file not found at {config_secrets_path}")
-        self.config_secrets.read(config_secrets_path)
+    def _load_config_file(self, parser, path: str, filename: str):
+        """Helper to load a configuration file and handle FileNotFoundError."""
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Configuration file '{filename}' not found at {path}")
+        parser.read(path)
 
     def _get_value_from_parser(self, parser, section: str, option: str, default, target_type):
         """
@@ -49,16 +42,14 @@ class Config:
             else: # Default to string
                 return parser.get(section, option)
         except ValueError as e:
-            # logger.error(f"Warning: Failed to convert option '{option}' in section '{section}' to type '{target_type.__name__}'. Error: {e}. Returning default.", file=sys.stderr)
             return default
         except configparser.Error as e:
-            # logger.error(f"Warning: Error reading option '{option}' in section '{section}'. Error: {e}. Returning default.", file=sys.stderr)
             return default
-
-    def get(self, section, option, default=None, target_type=str):
+        
+    def get(self, section: str, option: str, default=None, target_type=str, is_secret: bool = False):
         """
-        Retrieves an option, prioritizing the secrets file, then the main config file.
-        Includes optional type conversion.
+        Retrieves an option, prioritizing the secrets file if is_secret is True,
+        otherwise checking the main config file first.
 
         Args:
             section (str): The name of the section.
@@ -66,53 +57,22 @@ class Config:
             default: The default value to return if the option is not found.
             target_type: The data type to convert the option value to (e.g., str, int, float, bool).
                          Defaults to str.
+            is_secret (bool): If True, prioritize looking in the secrets config first.
 
         Returns:
             Any: The value of the option, converted to the specified type,
                  or the default value if the option or section is not found.
         """
+        if is_secret:
+            # Check secrets first
+            value = self._get_value_from_parser(self.config_secrets, section, option, None, target_type)
+            if value is not None:
+                return value
 
-        # Prioritize secrets config
-        value = self._get_value_from_parser(self.config_secrets, section, option, None, target_type)
-        if value is not None: # If found in secrets, return it
-            return value
-
-        # Otherwise, check config
+        # Check main config (or fallback from secrets check)
         value = self._get_value_from_parser(self.config, section, option, default, target_type)
         return value
     
-    def get_section(self, section):
-        """
-        Retrieves a section from the configuration.
-
-        Args:
-            section (str): The name of the section.
-
-        Returns:
-            dict: A dictionary containing the key-value pairs of the section,
-                  or an empty dictionary if the section is not found.
-        """
-        if self.config.has_section(section):
-            return dict(self.config.items(section))
-        else:
-            return {} # Return empty dict if section not found
-        
-    def get_secret_section(self, section):
-        """
-        Retrieves a section from the configuration.
-
-        Args:
-            section (str): The name of the section.
-
-        Returns:
-            dict: A dictionary containing the key-value pairs of the section,
-                  or an empty dictionary if the section is not found.
-        """
-        if self.config_secrets.has_section(section):
-            return dict(self.config_secrets.items(section))
-        else:
-            return {} # Return empty dict if section not found
-
 class DatabaseConfig(Config):
     """
     A subclass of Config specifically for database settings.
@@ -123,74 +83,85 @@ class DatabaseConfig(Config):
 
         # Main application database user (for connecting to Vivarium DB)
         self.user = self.get(db_section, 'user', default='vivarium')
-        self.password = self.get(db_section, 'password', default='default_app_password') # Ensure this comes from secrets
+        self.password = self.get(db_section, 'password', default='default_app_password', is_secret=True) # App user password from secrets
         self.dbname = self.get(db_section, 'dbname', default='vivarium')
+        
+        # Host and Port for local connections (e.g., if Vivarium DB is on localhost)
         self.host = self.get(db_section, 'host', default='localhost')
         self.port = self.get(db_section, 'port', default=5432, target_type=int)
 
         # Remote user (e.g., 'calcasmy' for general remote access or setup)
-        self.remote_user = self.get(db_section, 'remote_user', default='vivarium')
-        self.remote_password = self.get(db_section, 'remote_password', default='') # Remote user password from secrets
-        self.remote_host = self.get(db_section, 'remote_host', default='192.168.6872')
-        self.remote_dbname = self.get(db_section, 'remote_dbname', default='vivarium')
+        self.remote_host = self.get(db_section, 'remote_host', default='192.168.68.72')
+        self.remote_port = self.get(db_section, 'remote_port', default=5432, target_type=int)
 
         # Superuser (e.g., 'postgres' for creating users/databases)
         self.superuser = self.get(db_section, 'super_user', default='postgres')
-        self.superuser_password = self.get(db_section, 'super_password', default='') # Superuser password from secrets
         self.superuser_dbname = self.get(db_section, 'super_dbname', default='postgres')
-
-        #supabase configurations
-        self.supabase4_user = self.get(db_section, 'supabaseipv4_user', default = None)
-        self.supabase4_password = self.get(db_section, 'supabaseipv4_password', default = None)
-        self.supabase4_host = self.get(db_section, 'supabaseipv4_host', default = None)
-        self.supabase4_port = self.get(db_section, 'supabaseipv4_port', default = None)
 
         # self.sslmode = self.get(db_section, 'sslmode', default='require') # Removed sslmode
 
     @property
-    def postgres(self):
+    def postgres(self) -> dict:
         """Returns a dictionary of PostgreSQL connection parameters."""
         return {
-            'dbname': self.dbname,
-            'host': self.host,
             'user': self.user,
             'password': self.password,
-            'port': self.port,
+            'dbname': self.dbname,
+            'host': self.host,
+            'port': self.port
             # 'sslmode': self.sslmode, #Removed sslmode
         }
     
     @property
-    def postgres_super(self):
-        """Returns a dictionary of PostgreSQL connection parameters."""
+    def postgres_remote(self) -> dict:
+        """Returns a dictionary of remote PostgreSQL connection parameters."""
         return {
-            'superuser': self.superuser,
-            'superhost': self.remote_host,
-            'superport': self.port,
-            'superpassword': self.superuser_password,
-            'superdbname': self.superuser_dbname
-        }
-    
-    @property
-    def postgres_remote(self):
-        """Returns a dictionary of PostgreSQL connection parameters."""
-        return {
-            'user': self.remote_user,
+            'user': self.user,
+            'password': self.password,
+            'dbname': self.dbname,
             'host': self.remote_host,
-            'port': self.port,
-            'password': self.remote_password,
-            'dbname': self.remote_dbname
+            'port': self.remote_port
+            # 'sslmode': self.sslmode, #Removed sslmode
         }
     
-    @property
-    def supabase(self):
-        """Return a dictonary of SupaBase connection parameters."""
-        return {
-            'user': self.supabase4_user,
-            'host': self.supabase4_host,
-            'port': self.supabase4_port,
-            'password': self.supabase4_password,
-            'dbname': self.dbname
-        }
+    # Will use supabase specific API key and Anon / service key. Hence commented
+    # @property
+    # def supabase(self) -> dict:
+    #     """Return a dictonary of SupaBase connection parameters."""
+    #     return {
+    #         'user': self.supabase4_user,
+    #         'host': self.supabase4_host,
+    #         'port': self.supabase4_port,
+    #         'password': self.supabase4_password,
+    #         'dbname': self.supabase4_dbname
+    #     }
+
+class SupabaseConfig(Config):
+    """
+    A subclass of Config specifically for Supabase settings.
+    """
+    def __init__(self):
+        super().__init__()
+        supabase_section = 'supabase'
+        self.url            = self.get(supabase_section, 'supabase_url', is_secret=True)
+        self.anon_key       = self.get(supabase_section, 'supabase_anon_key', is_secret=True) # Usually the anon or service_role key
+        self.connstring     = self.get(supabase_section, 'supabaseipv4_constring', is_secret=True)
+
+        if not self.url or not self.anon_key:
+            print("FATAL: Supabase URL or Key not found in secrets. Supabase operations will fail.", file=sys.stderr)
+
+        self.sslmode = self.get(supabase_section, 'sslmode', default='require')
+
+class SupabaseConfig_Service(Config):
+    """
+    A subclass of Config specifically for Supabase service settings.
+    """
+    def __init__(self):
+        super().__init__()
+        self.service_key = self.get('supabase', 'supabase_service_key', is_secret=True)
+
+        if not self.service_key:
+            print("FATAL: Supabase service_Key not found in secrets. Supabase operations will fail.", file=sys.stderr)
 
 class WeatherAPIConfig(Config):
     """
@@ -200,7 +171,7 @@ class WeatherAPIConfig(Config):
         super().__init__()
         api_section = 'weather_api'
         self.url = self.get(api_section, 'weather_api_url', default='https://api.weatherapi.com/v1')
-        self.api_key = self.get(api_section, 'weather_api_key', default=None)
+        self.api_key = self.get(api_section, 'weather_api_key', default=None, is_secret=True)
         self.lat_long = self.get(api_section, 'weather_api_lat_long', default='5.98,116.07')
         self.location_name = self.get(api_section, 'weather_loc_kinabalu', default='Gunung Kinabalu')
         self.fetch_interval = self.get(api_section, 'weather_fetch_interval', default=3, target_type = int)
@@ -216,6 +187,8 @@ class FileConfig(Config):
         self.log_folder = self.get(file_section, 'logsfolder', default = 'logs')
         self.notes_folder = self.get(file_section, 'notesfolder', default = 'notes')
         self.raw_folder = self.get(file_section, 'rawfielfolder', default = 'rawfiles')
+        self.data_file = self.get(file_section, 'data_file', default = 'postgres_sensors_devices_data.sql')
+        self.schema_file = self.get(file_section, 'schema_file', default = 'postgres_schema.sql')
 
 class TimeConfig(Config):
     """
@@ -310,7 +283,7 @@ class HumidifierConfig(Config):
         super().__init__()
         humidifier_section = 'humidifier'
         self.username = self.get(humidifier_section, 'username', default = 'username', target_type = str)
-        self.password = self.get(humidifier_section, 'password', default = 'password', target_type = str)
+        self.password = self.get(humidifier_section, 'password', default = 'password', target_type = str, is_secret=True)
         self.mode = self.get(humidifier_section, 'mode', default = 'manual', target_type = str)
         self.device_id = self.get(humidifier_section, 'device_id', default = 3, target_type = int)
         self.runtime = self.get(humidifier_section, 'runtime', default = 30, target_type = int)

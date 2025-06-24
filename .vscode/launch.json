@@ -94,6 +94,113 @@
             "cwd": "${workspaceFolder}",     // Ensures script runs from project root
             "args": ["--isremote"],          // Pass the --isremote argument
             "justMyCode": true
+        },
+        {
+            "name": "Debug db_setup.py (Supabase)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/db_setup.py", // Assumes db_setup.py is at the root
+            "console": "integratedTerminal", // Important for interactive prompts
+            "cwd": "${workspaceFolder}",     // Ensures script runs from project root
+            "args": ["--issupabase"],          // Pass the --isremote argument
+            "justMyCode": true
+        },
+        {
+            "name": "Debug db_setup.py (Supabase)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/db_setup_v2.py", // Assumes db_setup.py is at the root
+            "console": "integratedTerminal", // Important for interactive prompts
+            "cwd": "${workspaceFolder}",     // Ensures script runs from project root
+            "args": ["--issupabase"],          // Pass the --isremote argument
+            "justMyCode": true
+        },
+
+        // --- 1. Database Setup Only ---
+        {
+            "name": "Orchestrator: PostgreSQL Local Setup Only",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/deploy/src/orchestrator.py",
+            "args": ["--postgres", "--local"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Orchestrator: PostgreSQL Remote Setup Only",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/deploy/src/orchestrator.py",
+            "args": ["--postgres", "--remote"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Orchestrator: Supabase Setup Only",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/deploy/src/orchestrator.py",
+            "args": ["--supabase"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Orchestrator: Other DB Setup Only (e.g., Oracle)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/deploy/src/orchestrator.py",
+            "args": ["--other", "oracle", "--local"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
+        },
+
+        // --- 2. Data Loading Only (Skip Database Setup) ---
+        {
+            "name": "Orchestrator: Load JSON Data Only (Skip Setup)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/deploy/src/orchestrator.py",
+            "args": ["--load-json-data", "--skip"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Orchestrator: Load DB Dump Only (Skip Setup)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/deploy/src/orchestrator.py",
+            "args": ["--load-db-dump", "/home/calcasmy/vivarium/deploy/src/database/postgres_sensors_devices_data.sql", "--skip"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
+        },
+
+        // --- 3. Database Setup and Data Loading ---
+        {
+            "name": "Orchestrator: Postgres Local Setup & Load JSON Data",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/deploy/src/orchestrator.py",
+            "args": ["--postgres", "--local", "--load-json-data", "/path/to/your/db_dump.sql"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Orchestrator: Postgres Local Setup & Load DB Dump",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/deploy/src/orchestrator.py",
+            "args": ["--postgres", "--local", "--load-db-dump", "/home/calcasmy/vivarium/deploy/src/database/postgres_sensors_devices_data.sql"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Orchestrator: Supabase Setup & Load JSON Data",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/deploy/src/orchestrator.py",
+            "args": ["--supabase", "--load-json-data"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
         }
     ]
 }

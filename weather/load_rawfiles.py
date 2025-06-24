@@ -29,7 +29,6 @@ from utilities.src.database_operations import DatabaseOperations
 from utilities.src.path_utils import PathUtils
 
 db_config = DatabaseConfig()
-
 logger = LogHelper.get_logger(__name__)
 
 class LoadRawfiles:
@@ -234,12 +233,16 @@ class LoadRawfiles:
         except Exception as e:
             logger.exception(f"An unexpected error occurred: {e}")
 
-def main():
+def main(user_type:str = None):
     """
     Main function to persist weather data from files in rawdata folder.
     """
     db_operations = DatabaseOperations()
-    db_operations.connect()
+
+    if not user_type:
+        db_operations.connect()
+    else:
+        db_operations.connect(user_type=user_type)
     try:
         get_weather_data = LoadRawfiles(db_operations)  # Pass the DatabaseOperations instance
         get_weather_data._persist_weather_data()
