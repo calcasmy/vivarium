@@ -72,3 +72,12 @@ You must run these commands from the vivarium/ project root directory.
         Command:
         -- Bash --
                 python deploy/src/orchestrator.py --supabase --load-json-data
+
+# Load JSON data into Supabase, deleting old records first
+python deploy/src/main.py --db-type supabase --load-json-data /path/to/json/folder
+
+# Load a database dump into Supabase, deleting old records first
+python deploy/src/main.py --db-type supabase --load-db-dump /path/to/dump/file.sql
+
+# Just run the retention policy on Supabase without loading new data
+python deploy/src/main.py --db-type supabase

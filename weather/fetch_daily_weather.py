@@ -69,7 +69,7 @@ class FetchDailyWeather:
 
         #Checking if the raw climate data file exists in the local directory.
         file_config = FileConfig()
-        files_dir = os.path.join(os.path.dirname(FetchDailyWeather.script_path()), file_config.raw_folder)
+        files_dir = os.path.join(os.path.dirname(FetchDailyWeather.script_path()), file_config.json_folder)
         os.makedirs(files_dir, exist_ok=True)
         _file = os.path.join(files_dir, date + '.json')
 
@@ -231,7 +231,7 @@ def main():
         get_weather_data = FetchDailyWeather(db_operations)  # Pass the DatabaseOperations instance
         # get_weather_data.fetch_and_store_weather_data()
         # -- Alternateive method calls if data for a specific date (or) date, location (lattitude and longitude) is required
-        get_weather_data.fetch_and_store_weather_data('2025-06-12',)
+        get_weather_data.fetch_and_store_weather_data('2025-06-24')
         # get_weather_data.fetch_and_store_weather_data('2025-05-18', '5.98,116.07')
     except Exception as e:
         logger.exception(f"An unexpected error occurred: {e}")

@@ -160,7 +160,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/deploy/src/orchestrator.py",
-            "args": ["--load-json-data", "--skip"],
+            "args": ["--load-json-data", "weather/rawfiles", "--skip"],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}"
         },
@@ -169,7 +169,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/deploy/src/orchestrator.py",
-            "args": ["--load-db-dump", "/home/calcasmy/vivarium/deploy/src/database/postgres_sensors_devices_data.sql", "--skip"],
+            "args": ["--load-db-dump", "deploy/src/database/postgres_sensors_devices_data.sql", "--skip"],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}"
         },
@@ -180,7 +180,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/deploy/src/orchestrator.py",
-            "args": ["--postgres", "--local", "--load-json-data", "/path/to/your/db_dump.sql"],
+            "args": ["--postgres", "--local", "--load-json-data", "weather/rawfiles"],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}"
         },
@@ -199,6 +199,15 @@
             "request": "launch",
             "program": "${workspaceFolder}/deploy/src/orchestrator.py",
             "args": ["--supabase", "--load-json-data"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Orchestrator: Supabase Setup & Load DB Dump",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/deploy/src/orchestrator.py",
+            "args": ["--supabase", "--load-db-dump", "deploy/src/database/postgres_sensors_devices_data.sql"],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}"
         }

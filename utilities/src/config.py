@@ -121,20 +121,7 @@ class DatabaseConfig(Config):
             'dbname': self.dbname,
             'host': self.remote_host,
             'port': self.remote_port
-            # 'sslmode': self.sslmode, #Removed sslmode
         }
-    
-    # Will use supabase specific API key and Anon / service key. Hence commented
-    # @property
-    # def supabase(self) -> dict:
-    #     """Return a dictonary of SupaBase connection parameters."""
-    #     return {
-    #         'user': self.supabase4_user,
-    #         'host': self.supabase4_host,
-    #         'port': self.supabase4_port,
-    #         'password': self.supabase4_password,
-    #         'dbname': self.supabase4_dbname
-    #     }
 
 class SupabaseConfig(Config):
     """
@@ -146,6 +133,12 @@ class SupabaseConfig(Config):
         self.url            = self.get(supabase_section, 'supabase_url', is_secret=True)
         self.anon_key       = self.get(supabase_section, 'supabase_anon_key', is_secret=True) # Usually the anon or service_role key
         self.connstring     = self.get(supabase_section, 'supabaseipv4_constring', is_secret=True)
+        self.user           = self.get(supabase_section, 'supabaseipv4_user', is_secret=True)
+        self.host           = self.get(supabase_section, 'supabaseipv4_host', is_secret=True)
+        self.port           = self.get(supabase_section, 'supabaseipv4_port', is_secret=True)
+        self.password       = self.get(supabase_section, 'supabaseipv4_password', is_secret=True)
+        self.dbname         = self.get(supabase_section, 'sudpbaseipv4_dbname', is_secret=True)
+        self.service_key    = self.get('supabase', 'supabase_service_key', is_secret=True)
 
         if not self.url or not self.anon_key:
             print("FATAL: Supabase URL or Key not found in secrets. Supabase operations will fail.", file=sys.stderr)
@@ -186,7 +179,7 @@ class FileConfig(Config):
         self.absolute_path = self.get(file_section, 'absolute_path', default = '')
         self.log_folder = self.get(file_section, 'logsfolder', default = 'logs')
         self.notes_folder = self.get(file_section, 'notesfolder', default = 'notes')
-        self.raw_folder = self.get(file_section, 'rawfielfolder', default = 'rawfiles')
+        self.json_folder = self.get(file_section, 'rawfielfolder', default = 'weather/rawfiles')
         self.data_file = self.get(file_section, 'data_file', default = 'postgres_sensors_devices_data.sql')
         self.schema_file = self.get(file_section, 'schema_file', default = 'postgres_schema.sql')
 
