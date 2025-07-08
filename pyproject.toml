@@ -1,44 +1,35 @@
+[project]
+name = "vivarium"
+version = "0.1.0"
+description = "Your Vivarium project description"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    # List your external dependencies here, e.g.,
+    # "psycopg2-binary",
+    # "pandas",
+    # "requests",
+    # "pathlib" # pathlib is built-in Python 3.4+, so usually not needed
+]
+authors = [ # <--- Moved these here
+    {name = "Adithya", email = "technoatomic@gmail.com"}
+]
+maintainers = [ # <--- Moved these here
+    {name = "Adithya", email = "technoatomic@gmail.com"}
+]
+classifiers = [ # <--- Moved these here
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Home Automation",
+    "Topic :: Scientific/Engineering :: Atmospheric Science"
+]
+
 [build-system]
-requires = ["setuptools>=61.0.0"]
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
-[project]
-name                  = "vivarium-automation"  # A more general name for your project
-version               = "0.1.0"             # Start with a semantic version
-description           = "Automation scripts for a vivarium, including environmental control and data management."
-readme                = "README.md"         # Link to your project's main README
-requires-python       = ">=3.7"     # Minimum Python version your entire project supports
-license               = { file = "LICENSE" } # If you have a project-wide LICENSE file
-
-authors = [
-  { name = "Adithya", email = "technoatomic@gmail.com" },
-]
-maintainers = [
-  { name = "Adithya", email = "technoatomic@gmail.com" },  # Replace with your info
-]
-
-classifiers = [
-  "Programming Language :: Python :: 3",
-  "License :: OSI Approved :: MIT License",  # Or your project's license
-  "Operating System :: OS Independent",
-  "Topic :: Home Automation",
-  "Topic :: Scientific/Engineering :: Atmospheric Science", # Or other relevant topics
-]
-
-[project.urls]
-"Homepage" = "https://github.com/calcasmy/Vivarium.git"
-"Bug Tracker" = "https://github.com/calcasmy/Vivarium/issues"
-
-[project.scripts]
-vivarium-scheduler = "scheduler.src.vivariumscheduler:main"  # Entry point for your scheduler
-vivarium-fetch-weather = "weather.src.fetch_daily_weather:main" # If you want a direct CLI for weather
-# Add other scripts if you have them (e.g., for terrarium control)
-
 [tool.setuptools.packages.find]
-where = ["."]
-include = ["aquarium*", "assets*", "scheduler*", "terrarium*", "utilities*", "weather*"]
-exclude = ["vivaenv*"]
-
-[tool.setuptools.package-data]
-# If you have any non-Python files that need to be included in packages
-# "your_package_name" = ["data/*.txt", "config/*.ini"]
+where = ["."] # Search for packages in the current directory (vivarium/)
+include = ["vivarium", "vivarium.*"] # Include the top-level 'vivarium' and all its subpackages
+exclude = [".vivaenv*", "venv*", "tests*"] # Good to explicitly exclude environments and test folders

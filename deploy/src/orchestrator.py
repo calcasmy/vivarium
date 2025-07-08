@@ -11,7 +11,7 @@ import os
 import sys
 import time
 import argparse
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Any
 
 # Ensure vivarium root is in sys.path to resolve imports correctly.
 # This block must be at the very top, before other project-specific imports.
@@ -22,7 +22,8 @@ if __name__ == "__main__":
         sys.path.insert(0, vivarium_path)
 
 from utilities.src.logger import LogHelper
-from utilities.src.config import FileConfig, DatabaseConfig
+from utilities.src.config import FileConfig, DatabaseConfig, SupabaseConfig
+from utilities.src.database_operations import DatabaseOperations, ConnectionDetails
 from deploy.src.database.db_setup_strategy import DBSetupStrategy
 from deploy.src.database.postgres_setup import PostgresSetup
 from deploy.src.database.supabase_setup import SupabaseSetup
@@ -90,28 +91,32 @@ class Orchestrator:
                 "Check the database type and configuration."
             )
 
-    def run_setup(self, sql_script_name: str = 'postgres_schema.sql') -> bool:
+    def run_setup(self, sql_script_name: str = 'postgres_schema.sql') -> Tuple[bool, Optional[DatabaseOperations]]:
         """
-        Delegates the database setup process to the chosen strategy.
+        Delegates the database setup process to the chosen strategy and returns
+        the active connection object on success.
 
         :param sql_script_name: The name of the SQL schema script to execute.
         :type sql_script_name: str
-        :return: True if the setup is successful, False otherwise.
-        :rtype: bool
+        :return: A tuple containing the setup success status (bool) and the
+                 active `DatabaseOperations` instance with the connection, or `None` on failure.
+        :rtype: Tuple[bool, Optional[DatabaseOperations]]
         """
         if self.db_setup_strategy is None:
             logger.warning(f"No setup strategy defined for '{self.db_type}'. Skipping automated setup.")
-            return False
+            return False, None
 
         logger.info(f"Orchestrator: Delegating full setup execution to the {self.db_type} strategy.")
         try:
-            return self.db_setup_strategy.execute_full_setup(sql_script_name=sql_script_name)
+            # The execute_full_setup method now returns the connection object.
+            success, db_ops_conn = self.db_setup_strategy.execute_full_setup(sql_script_name=sql_script_name)
+            return success, db_ops_conn
         except Exception as e:
             logger.error(
                 f"An unexpected error occurred during database setup delegation: {e}",
                 exc_info=True
             )
-            return False
+            return False, None
     
     def run_data_loading(self, data_loader_strategy: DataLoaderStrategy) -> bool:
         """
@@ -262,18 +267,24 @@ def _resolve_and_validate_paths(args: argparse.Namespace) -> None:
         logger.info(f"Validated JSON data directory path: {args.load_json_data}")
 
 
-def _run_db_setup(args: argparse.Namespace) -> Tuple[Optional[Orchestrator], bool]:
+def _run_db_setup(args: argparse.Namespace) -> Tuple[Optional[Orchestrator], bool, Optional[DatabaseOperations]]:
     """
     Handles the database setup phase based on command-line arguments.
 
+    Initializes the orchestrator, runs the setup, and returns the active
+    database connection object if successful.
+
     :param args: Parsed command-line arguments.
     :type args: argparse.Namespace
-    :return: A tuple containing the `Orchestrator` instance and a boolean
-             indicating whether the setup was successful or skipped.
-    :rtype: Tuple[Optional[Orchestrator], bool]
+    :return: A tuple containing:
+             - An `Orchestrator` instance.
+             - A boolean indicating whether the setup was successful or skipped.
+             - The active `DatabaseOperations` connection instance, or `None`.
+    :rtype: Tuple[Optional[Orchestrator], bool, Optional[DatabaseOperations]]
     """
     orchestrator_instance: Optional[Orchestrator] = None
     setup_successful: bool = False
+    db_ops_conn: Optional[DatabaseOperations] = None
     
     explicit_db_setup_flag_provided = args.postgres or args.supabase or args.other
 
@@ -298,28 +309,40 @@ def _run_db_setup(args: argparse.Namespace) -> Tuple[Optional[Orchestrator], boo
         try:
             orchestrator_instance = Orchestrator(database_type=db_type, connection_type=connection_type)
             logger.info("Starting database setup phase...")
-            if orchestrator_instance.run_setup(sql_script_name=file_config.schema_file):
+            
+            # --- Select the appropriate schema file based on database type ---
+            sql_script_name: str
+            if db_type == 'supabase':
+                sql_script_name = file_config.supabase_schema
+            else:
+                sql_script_name = file_config.schema_file
+
+            # Run the setup and capture the returned success status and connection object.
+            setup_successful, db_ops_conn = orchestrator_instance.run_setup(sql_script_name=sql_script_name)
+
+            if setup_successful:
                 logger.info("Database setup process completed successfully.")
-                setup_successful = True
             else:
                 logger.error("Database setup process finished with errors. Data loading will be skipped.")
-                setup_successful = False
+                # No need to sys.exit(1) here; the caller will handle it and ensure cleanup.
         except (ValueError, NotImplementedError, RuntimeError) as e:
             logger.error(f"Error during orchestrator initialization or setup: {e}", exc_info=True)
-            sys.exit(1) # Exit immediately on critical setup errors.
+            sys.exit(1) # Exit immediately on critical initialization errors.
     else:
         # If no explicit setup flags and no --skip, assume setup is not required.
         logger.info("No database setup flags provided. Assuming database is already set up.")
         setup_successful = True  # Assume success for data loading purposes.
         orchestrator_instance = Orchestrator(database_type="none", connection_type="none")
+        # In this case, we don't have a connection, so db_ops_conn remains None.
     
-    return orchestrator_instance, setup_successful
+    return orchestrator_instance, setup_successful, db_ops_conn
 
 
 def _run_data_loading(
     args: argparse.Namespace,
     orchestrator_instance: Optional[Orchestrator],
-    setup_successful: bool
+    setup_successful: bool,
+    db_ops_conn: Optional[DatabaseOperations]
 ) -> None:
     """
     Handles the data loading phase based on command-line arguments.
@@ -331,6 +354,9 @@ def _run_data_loading(
     :param setup_successful: A boolean indicating if the database setup phase
                              was successful or skipped.
     :type setup_successful: bool
+    :param db_ops_conn: The active `DatabaseOperations` connection instance returned
+                        by the setup phase, or `None`.
+    :type db_ops_conn: Optional[DatabaseOperations]
     :raises SystemExit: If data loading fails, the script exits with a status code of 1.
     """
     # Proceed to data loading ONLY if a loader flag is given AND setup was successful (or skipped).
@@ -342,6 +368,7 @@ def _run_data_loading(
         # JSON Data Loading
         if args.load_json_data:
             logger.info("Starting JSON data loading phase...")
+            # JSONDataLoader needs a db_config. We'll use the one from the orchestrator.
             json_loader = JSONDataLoader(
                 folder_path=args.load_json_data,
                 db_config=orchestrator_instance.db_config
@@ -355,10 +382,33 @@ def _run_data_loading(
         # Database Dump Loading (Mutually exclusive with JSON loading)
         elif args.load_db_dump:
             logger.info(f"Starting database dump loading from: {args.load_db_dump}...")
+            
+            # --- Pass the active connection and config to the data loader ---
+            # NOTE: We need the ConnectionDetails for the psql command to know the host/port/user.
+            # We get this from the appropriate config class based on the db_type.
+            if orchestrator_instance.db_type == 'supabase':
+                config_instance = SupabaseConfig()
+            else:
+                # Default to a standard database config
+                config_instance = DatabaseConfig() 
+            
+            conn_details = ConnectionDetails(
+                host=config_instance.host,
+                port=int(config_instance.port),
+                user=config_instance.user,
+                password=config_instance.password,
+                database=config_instance.dbname
+            )
+            
+            # === MODIFIED SECTION ===
+            # Initialize PostgresDataLoader with the active connection and connection details.
             db_dump_loader = PostgresDataLoader(
                 file_path=args.load_db_dump,
-                db_config=orchestrator_instance.db_config
+                db_ops=db_ops_conn, # Pass the active DatabaseOperations instance
+                connection_details=conn_details # Pass connection details for psql command
             )
+            # === END MODIFIED SECTION ===
+
             if orchestrator_instance.run_data_loading(db_dump_loader):
                 logger.info("Database dump loading process completed successfully.")
             else:
@@ -379,19 +429,31 @@ def main() -> None:
     based on command-line arguments provided by the user.
     """
     start_time = time.time()
+    db_ops_conn: Optional[DatabaseOperations] = None # Initialize connection to None
 
-    # Phase 1: Parse and validate command-line arguments and paths.
-    args = _parse_args()
-    _resolve_and_validate_paths(args)
+    try:
+        # Phase 1: Parse and validate command-line arguments and paths.
+        args = _parse_args()
+        _resolve_and_validate_paths(args)
 
-    # Phase 2: Run the database setup.
-    orchestrator_instance, setup_successful = _run_db_setup(args)
+        # Phase 2: Run the database setup, getting back the connection if successful.
+        orchestrator_instance, setup_successful, db_ops_conn = _run_db_setup(args)
 
-    # Phase 3: Run the data loading.
-    _run_data_loading(args, orchestrator_instance, setup_successful)
+        # Phase 3: Run the data loading using the returned connection.
+        _run_data_loading(args, orchestrator_instance, setup_successful, db_ops_conn)
 
-    end_time = time.time()
-    logger.info(f"Total script execution time: {end_time - start_time:.2f} seconds")
+    except Exception as e:
+        logger.critical(f"A critical, unhandled exception occurred in the main execution block: {e}", exc_info=True)
+        sys.exit(1) # Exit with a failure status
+        
+    finally:
+        # Phase 4: Always ensure the database connection is closed.
+        if db_ops_conn:
+            logger.info("Closing the database connection managed by the orchestrator.")
+            db_ops_conn.close()
+            
+        end_time = time.time()
+        logger.info(f"Total script execution time: {end_time - start_time:.2f} seconds")
 
 
 if __name__ == "__main__":

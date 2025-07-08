@@ -1,10 +1,12 @@
 # src/database/raw_data_queries.py
 import json
 from typing import Optional, Dict
-from utilities.src.database_operations import DatabaseOperations
+from utilities.src.db_operations import DBOperations
+from utilities.src.logger import LogHelper
 
+logger = LogHelper.get_logger(__name__)
 
-class RawDataQueries(DatabaseOperations):
+class RawDataQueries(DBOperations):
     def __init__(self, db_operations):
         super().__init__()
         self.conn = db_operations.get_connection()
@@ -61,6 +63,29 @@ class RawDataQueries(DatabaseOperations):
         params = (date,)
         result = self.execute_query(query, params, fetch=True)
         if result:
-            return result[0]['raw_data']
+            retrieved_data = result[0]['raw_data']
+            if isinstance(retrieved_data, str):
+                try:
+                    logger.warning(
+                        f"Raw data for {date} retrieved from DB was a string. "
+                        "Attempting to parse it into a dictionary."
+                    )
+                    retrieved_data = json.loads(retrieved_data)
+                except json.JSONDecodeError as e:
+                    logger.error(
+                        f"Failed to parse raw data string from DB for {date}: {e}. "
+                        "Returning None as data is unusable.",
+                        exc_info=True
+                    )
+                    return None
+            
+            # Final check to ensure it's a dictionary after all attempts.
+            if not isinstance(retrieved_data, dict):
+                logger.error(
+                    f"Raw data for {date} from DB is not a dictionary after parsing attempts. "
+                    f"Actual type: {type(retrieved_data).__name__}. Returning None."
+                )
+                return None
+            return retrieved_data
         else:
             return None

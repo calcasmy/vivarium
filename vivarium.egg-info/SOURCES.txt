@@ -1,0 +1,7 @@
+LICENSE
+pyproject.toml
+setup.py
+vivarium.egg-info/PKG-INFO
+vivarium.egg-info/SOURCES.txt
+vivarium.egg-info/dependency_links.txt
+vivarium.egg-info/top_level.txt

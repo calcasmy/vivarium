@@ -6,8 +6,13 @@ directory, regardless of the current working directory.
 """
 
 import os
+import sys
 import logging
 from pathlib import Path
+
+# CRITICAL: Import the top-level 'vivarium' package itself. This is used to
+# reliably determine the project's root directory.
+import vivarium
 
 logger = logging.getLogger(__name__)
 
@@ -18,64 +23,60 @@ class PathUtils:
     within the Vivarium project structure.
     """
 
-    _project_root = None  # Cache for the calculated project root path
-
     @classmethod
-    def get_project_root(cls) -> Path:
+    def get_vivarium_package_root(cls) -> Path:
         """
         Determines and returns the absolute path to the root directory of the
-        'vivarium' project.
+        'vivarium' Python package.
 
-        This method works by finding the location of the current file (`path_utils.py`)
-        and then navigating up the directory tree to the expected project root.
-        It assumes the structure: `vivarium/utilities/src/path_utils.py`.
+        This method is robust as it relies on Python's module system to find
+        the location of the `vivarium` package's `__init__.py` file.
 
         :returns: An absolute :class:`pathlib.Path` object pointing to the
-                  'vivarium' project's root directory.
+                  'vivarium' package's root directory.
         :rtype: Path
+        :raises FileNotFoundError: If the 'vivarium' package root cannot be reliably determined.
         """
-        if cls._project_root is None:
-            # Get the directory of the current file (path_utils.py)
-            current_file_dir = Path(os.path.abspath(__file__)).parent
-            # Navigate up two levels:
-            # from .../vivarium/utilities/src/
-            # to .../vivarium/utilities/
-            # to .../vivarium/
-            cls._project_root = (current_file_dir / ".." / "..").resolve()
-            logger.debug(f"Determined project root: {cls._project_root}")
-        return cls._project_root
+        try:
+            # vivarium.__file__ points to vivarium/__init__.py, so .parent gives vivarium/
+            return Path(vivarium.__file__).parent.resolve()
+        except (AttributeError, FileNotFoundError) as e:
+            logger.critical(
+                f"Could not determine vivarium package path via `vivarium.__file__` ({e}). "
+                "Ensure 'vivarium' is a properly installed/importable package."
+            )
+            raise FileNotFoundError("Vivarium package root could not be determined.") from e
 
     @classmethod
-    def get_resource_path(cls, relative_path_from_project_root: str, must_exist: bool = True) -> Path:
+    def get_resource_path(cls, relative_path_from_vivarium_root: str, must_exist: bool = True) -> Path:
         """
         Resolves a resource path (file or directory) to an absolute path,
-        treating the input path as relative to the top-level 'vivarium' project directory.
+        treating the input path as relative to the top-level 'vivarium' package directory.
 
-        :param relative_path_from_project_root: The path to the resource (file or folder),
+        :param relative_path_from_vivarium_root: The path to the resource (file or folder),
                                                 relative to the root directory of the
-                                                'vivarium' project.
+                                                'vivarium' Python package.
                                                 (e.g., 'resources/postgres_schema.sql',
-                                                'resources/processed_api_climatefiles',
-                                                'config.ini').
-        :type relative_path_from_project_root: str
+                                                'resources/processed_api_climatefiles').
+        :type relative_path_from_vivarium_root: str
         :param must_exist: If :obj:`True`, raises a :class:`FileNotFoundError` if the
                            resolved path does not exist. Defaults to :obj:`True`.
         :type must_exist: bool
         :returns: An absolute :class:`pathlib.Path` object pointing to the resource.
         :rtype: Path
         :raises FileNotFoundError: If the specified resource does not exist and
-                                   `must_exist` is :obj:`True`.
+                                   `must_exist` is :obj:`True`, or if the vivarium
+                                   package root cannot be determined.
         """
-        project_root = cls.get_project_root()
-        absolute_path = project_root / relative_path_from_project_root
-
+        vivarium_package_root = cls.get_vivarium_package_root()
+        absolute_path = vivarium_package_root / relative_path_from_vivarium_root
+        
         if must_exist and not absolute_path.exists():
             raise FileNotFoundError(
                 f"Resource not found at expected path: {absolute_path}. "
-                f"Resolved from project root '{project_root}' "
-                f"with relative path '{relative_path_from_project_root}'."
+                f"Resolved from vivarium package root '{vivarium_package_root}' "
+                f"with relative path '{relative_path_from_vivarium_root}'."
             )
-        logger.debug(f"Resolved resource path: {absolute_path}")
         return absolute_path
 
     @classmethod
@@ -99,20 +100,20 @@ class PathUtils:
         :raises FileNotFoundError: If 'config_secrets.ini' is not found.
         """
         return cls.get_resource_path('config_secrets.ini', must_exist=True)
-
+    
     @classmethod
-    def get_sql_script_path(cls, relative_path_from_project_root: str) -> Path:
+    def get_sql_script_path(cls, relative_path_from_vivarium_root: str) -> Path:
         """
         Resolves a SQL script path to an absolute path, treating the input path
-        as relative to the top-level 'vivarium' project directory.
+        as relative to the top-level 'vivarium' package directory.
 
-        :param relative_path_from_project_root: The path to the SQL script file,
+        :param relative_path_from_vivarium_root: The path to the SQL script file,
                                                 relative to the root directory of the
-                                                'vivarium' project.
+                                                'vivarium' Python package.
                                                 (e.g., 'resources/postgres_schema.sql').
-        :type relative_path_from_project_root: str
+        :type relative_path_from_vivarium_root: str
         :returns: An absolute :class:`pathlib.Path` object pointing to the SQL script file.
         :rtype: Path
         :raises FileNotFoundError: If the specified script file does not exist.
         """
-        return cls.get_resource_path(relative_path_from_project_root, must_exist=True)
+        return cls.get_resource_path(relative_path_from_vivarium_root, must_exist=True)

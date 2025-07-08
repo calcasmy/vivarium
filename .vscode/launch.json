@@ -1,19 +1,18 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-   // .vscode/launch.json
     "version": "0.2.0",
     "configurations": [
         {
             "name": "Debug Manual Control (Light ON)",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/manual_control/src/control_device.py", // Path to your script
-            "args": ["--device", "light", "--action", "on"], // Command-line arguments
-            "cwd": "${workspaceFolder}", // Current working directory should be the project root
-            "console": "integratedTerminal", // To see print statements and logs
-            "justMyCode": true // Set to false if you want to step into installed library code
+            "program": "${workspaceFolder}/manual_control/src/control_device.py",
+            "args": ["--device", "light", "--action", "on"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
         },
         {
             "name": "Debug Manual Control (Light OFF)",
@@ -23,7 +22,10 @@
             "args": ["--device", "light", "--action", "off"],
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
-            "justMyCode": true
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
         },
         {
             "name": "Debug Manual Control (Light Status)",
@@ -33,7 +35,10 @@
             "args": ["--device", "light", "--action", "status"],
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
-            "justMyCode": true
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
         },
         {
             "name": "Debug Manual Control (Mister ON)",
@@ -43,7 +48,10 @@
             "args": ["--device", "mister", "--action", "on"],
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
-            "justMyCode": true
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
         },
         {
             "name": "Debug Manual Control (Mister OFF)",
@@ -53,7 +61,10 @@
             "args": ["--device", "mister", "--action", "off"],
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
-            "justMyCode": true
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
         },
         {
             "name": "Debug Manual Control (Mister Run for 5s)",
@@ -63,7 +74,10 @@
             "args": ["--device", "mister", "--action", "run_for", "--duration", "5"],
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
-            "justMyCode": true
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
         },
         {
             "name": "Debug Manual Control (Mister Status)",
@@ -73,50 +87,63 @@
             "args": ["--device", "mister", "--action", "status"],
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
-            "justMyCode": true
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
         },
         {
             "name": "Debug db_setup.py (Local)",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/db_setup.py", // Assumes db_setup.py is at the root
-            "console": "integratedTerminal", // Important for interactive prompts
-            "cwd": "${workspaceFolder}",     // Ensures script runs from project root
-            "args": [],                      // No arguments for local setup
-            "justMyCode": true
+            "program": "${workspaceFolder}/db_setup.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "args": [],
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
         },
         {
             "name": "Debug db_setup.py (Remote)",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/db_setup.py", // Assumes db_setup.py is at the root
-            "console": "integratedTerminal", // Important for interactive prompts
-            "cwd": "${workspaceFolder}",     // Ensures script runs from project root
-            "args": ["--isremote"],          // Pass the --isremote argument
-            "justMyCode": true
+            "program": "${workspaceFolder}/db_setup.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "args": ["--isremote"],
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
         },
         {
             "name": "Debug db_setup.py (Supabase)",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/db_setup.py", // Assumes db_setup.py is at the root
-            "console": "integratedTerminal", // Important for interactive prompts
-            "cwd": "${workspaceFolder}",     // Ensures script runs from project root
-            "args": ["--issupabase"],          // Pass the --isremote argument
-            "justMyCode": true
+            "program": "${workspaceFolder}/db_setup.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "args": ["--issupabase"],
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
         },
         {
-            "name": "Debug db_setup.py (Supabase)",
+            "name": "Debug db_setup.py (Supabase) 2",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/db_setup_v2.py", // Assumes db_setup.py is at the root
-            "console": "integratedTerminal", // Important for interactive prompts
-            "cwd": "${workspaceFolder}",     // Ensures script runs from project root
-            "args": ["--issupabase"],          // Pass the --isremote argument
-            "justMyCode": true
+            "program": "${workspaceFolder}/db_setup_v2.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "args": ["--issupabase"],
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
         },
-
-        // --- 1. Database Setup Only ---
         {
             "name": "Orchestrator: PostgreSQL Local Setup Only",
             "type": "debugpy",
@@ -124,7 +151,10 @@
             "program": "${workspaceFolder}/deploy/src/orchestrator.py",
             "args": ["--postgres", "--local"],
             "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
         },
         {
             "name": "Orchestrator: PostgreSQL Remote Setup Only",
@@ -133,7 +163,10 @@
             "program": "${workspaceFolder}/deploy/src/orchestrator.py",
             "args": ["--postgres", "--remote"],
             "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
         },
         {
             "name": "Orchestrator: Supabase Setup Only",
@@ -142,7 +175,10 @@
             "program": "${workspaceFolder}/deploy/src/orchestrator.py",
             "args": ["--supabase"],
             "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
         },
         {
             "name": "Orchestrator: Other DB Setup Only (e.g., Oracle)",
@@ -151,10 +187,11 @@
             "program": "${workspaceFolder}/deploy/src/orchestrator.py",
             "args": ["--other", "oracle", "--local"],
             "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
         },
-
-        // --- 2. Data Loading Only (Skip Database Setup) ---
         {
             "name": "Orchestrator: Load JSON Data Only (Skip Setup)",
             "type": "debugpy",
@@ -162,7 +199,10 @@
             "program": "${workspaceFolder}/deploy/src/orchestrator.py",
             "args": ["--load-json-data", "weather/rawfiles", "--skip"],
             "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
         },
         {
             "name": "Orchestrator: Load DB Dump Only (Skip Setup)",
@@ -171,10 +211,11 @@
             "program": "${workspaceFolder}/deploy/src/orchestrator.py",
             "args": ["--load-db-dump", "deploy/src/database/postgres_sensors_devices_data.sql", "--skip"],
             "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
         },
-
-        // --- 3. Database Setup and Data Loading ---
         {
             "name": "Orchestrator: Postgres Local Setup & Load JSON Data",
             "type": "debugpy",
@@ -182,7 +223,10 @@
             "program": "${workspaceFolder}/deploy/src/orchestrator.py",
             "args": ["--postgres", "--local", "--load-json-data", "weather/rawfiles"],
             "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
         },
         {
             "name": "Orchestrator: Postgres Local Setup & Load DB Dump",
@@ -191,7 +235,10 @@
             "program": "${workspaceFolder}/deploy/src/orchestrator.py",
             "args": ["--postgres", "--local", "--load-db-dump", "/home/calcasmy/vivarium/deploy/src/database/postgres_sensors_devices_data.sql"],
             "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
         },
         {
             "name": "Orchestrator: Supabase Setup & Load JSON Data",
@@ -200,7 +247,10 @@
             "program": "${workspaceFolder}/deploy/src/orchestrator.py",
             "args": ["--supabase", "--load-json-data"],
             "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
         },
         {
             "name": "Orchestrator: Supabase Setup & Load DB Dump",
@@ -209,7 +259,159 @@
             "program": "${workspaceFolder}/deploy/src/orchestrator.py",
             "args": ["--supabase", "--load-db-dump", "deploy/src/database/postgres_sensors_devices_data.sql"],
             "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        {
+            "name": "Deploy: PostgreSQL Local Setup Only",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/deploy/src/deploy_orchestrator.py",
+            "args": ["--postgres", "--local"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        {
+            "name": "Deploy: PostgreSQL Remote Setup Only",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/deploy/src/deploy_orchestrator.py",
+            "args": ["--postgres", "--remote"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        
+        
+        // -- POSTGRES SETUP AND DATA LOADING
+        // -- Postgres setup and full data load
+        {
+            "name": "Deploy: Postgres Local Setup & Load All Data",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/deploy/src/deploy_orchestrator.py",
+            "args": [
+                "-P",
+                "-l",
+                "--load-db-dump", "resources/postgres_sensors_devices_data.sql",
+                "--load-json-data", "resources/raw_api_climatefiles"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+
+        // -- postgres pgdump data loading only
+        {
+            "name": "Deploy: Load DB Dump Only (Skip Setup)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/deploy/src/deploy_orchestrator.py",
+            "args": [
+                "-P", 
+                "-l", 
+                "--load-db-dump", "resources/postgres_sensors_devices_data.sql", 
+                "--skip"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        // -- postgres json data loading only
+        {
+            "name": "Deploy: Load JSON Data Only (Skip Setup)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/deploy/src/deploy_orchestrator.py",
+            "args": [
+                "-P", 
+                "-l", 
+                "--load-json-data", "resources/raw_api_climatefiles", 
+                "--skip"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        // -- postgres setup and JSON data loading only
+        {
+            "name": "Deploy: Postgres Local Setup & Load JSON Data",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/deploy/src/deploy_orchestrator.py",
+            "args": [
+                "-P",
+                "-l",
+                "--load-json-data", "resources/raw_api_climatefiles"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        // -- SUPABASE SETUP AND DATA LOADING
+        // -- supabase setup and full data load
+        {
+            "name": "Deploy: Supabase Setup & Load All Data",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/deploy/src/deploy_orchestrator.py",
+            "args": [
+                "-S",
+                "-l",
+                "--load-db-dump", "resources/postgres_sensors_devices_data.sql",
+                "--load-json-data", "resources/raw_api_climatefiles"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        // -- supabase setup only
+        {
+            "name": "Deploy: Supabase Setup Only",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/deploy/src/deploy_orchestrator.py",
+            "args": ["-S"],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        // -- supabase pgdump data loading only
+        {
+            "name": "Deploy: Supabase Load DB Dump (Skip setup)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/deploy/src/deploy_orchestrator.py",
+            "args": [
+                "-S",
+                "-l",
+                "--load-db-dump", "resources/postgres_sensors_devices_data.sql", 
+                "--skip"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
         }
     ]
 }

@@ -4,6 +4,8 @@ import sys
 import configparser
 
 from utilities.src.path_utils import PathUtils
+# from utilities.src.db_operations import ConnectionDetails
+
 
 class Config:
     """
@@ -100,28 +102,67 @@ class DatabaseConfig(Config):
 
         # self.sslmode = self.get(db_section, 'sslmode', default='require') # Removed sslmode
 
-    @property
-    def postgres(self) -> dict:
-        """Returns a dictionary of PostgreSQL connection parameters."""
-        return {
-            'user': self.user,
-            'password': self.password,
-            'dbname': self.dbname,
-            'host': self.host,
-            'port': self.port
-            # 'sslmode': self.sslmode, #Removed sslmode
-        }
+    # @property
+    # def postgres(self) -> dict:
+    #     """Returns a dictionary of PostgreSQL connection parameters."""
+    #     return {
+    #         'user': self.user,
+    #         'password': self.password,
+    #         'dbname': self.dbname,
+    #         'host': self.host,
+    #         'port': self.port
+    #         # 'sslmode': self.sslmode, #Removed sslmode
+    #     }
     
+    # @property
+    # def postgres_remote(self) -> dict:
+    #     """Returns a dictionary of remote PostgreSQL connection parameters."""
+    #     return {
+    #         'user': self.user,
+    #         'password': self.password,
+    #         'dbname': self.dbname,
+    #         'host': self.remote_host,
+    #         'port': self.remote_port
+    #     }
+
+    # @property
+    # def postgres(self) -> ConnectionDetails:
+    #     """Returns a dictionary of PostgreSQL connection parameters."""
+    #     return {
+    #         'user': self.user,
+    #         'password': self.password,
+    #         'dbname': self.dbname,
+    #         'host': self.host,
+    #         'port': self.port
+    #         # 'sslmode': self.sslmode, #Removed sslmode
+    #     }
+    
+    # @property
+    # def postgres_remote(self) -> ConnectionDetails:
+    #     """Returns a dictionary of remote PostgreSQL connection parameters."""
+    #     return {
+    #         'user': self.user,
+    #         'password': self.password,
+    #         'dbname': self.dbname,
+    #         'host': self.remote_host,
+    #         'port': self.remote_port
+    #     }
+    # @property
+    # def postgres_superuser_connection(self) -> ConnectionDetails:
+    #     """Returns ConnectionDetails for superuser (e.g., postgres) connection."""
+    #     return ConnectionDetails(
+    #         user=self.superuser,
+    #         password=self.superuser_password,
+    #         database=self.superuser_dbname,
+    #         host=self.local_host, # Assuming superuser connects to local host by default for setup tasks
+    #         port=self.local_port
+    #     )
+
     @property
-    def postgres_remote(self) -> dict:
-        """Returns a dictionary of remote PostgreSQL connection parameters."""
-        return {
-            'user': self.user,
-            'password': self.password,
-            'dbname': self.dbname,
-            'host': self.remote_host,
-            'port': self.remote_port
-        }
+    def connection_type(self) -> str:
+        """Returns the desired database connection type ('local', 'remote', 'supabase')."""
+        return self.get('database', 'connection_type', default='local')
+
 
 class SupabaseConfig(Config):
     """
@@ -137,13 +178,34 @@ class SupabaseConfig(Config):
         self.host           = self.get(supabase_section, 'supabaseipv4_host', is_secret=True)
         self.port           = self.get(supabase_section, 'supabaseipv4_port', is_secret=True)
         self.password       = self.get(supabase_section, 'supabaseipv4_password', is_secret=True)
-        self.dbname         = self.get(supabase_section, 'sudpbaseipv4_dbname', is_secret=True)
+        self.dbname         = self.get(supabase_section, 'supabaseipv4_dbname', is_secret=True)
         self.service_key    = self.get('supabase', 'supabase_service_key', is_secret=True)
 
         if not self.url or not self.anon_key:
             print("FATAL: Supabase URL or Key not found in secrets. Supabase operations will fail.", file=sys.stderr)
 
         self.sslmode = self.get(supabase_section, 'sslmode', default='require')
+
+    # @property
+    # def supabase_connection_details(self) -> ConnectionDetails:
+    #     """
+    #     Returns ConnectionDetails for Supabase connection,
+    #     including URL, Anon Key, and Connection String in extra_params.
+    #     """
+    #     extra_params = {
+    #         'supabase_url': self.url,
+    #         'supabase_anon_key': self.anon_key,
+    #         'supabase_connstring': self.connstring
+    #     }
+    #     return ConnectionDetails(
+    #         host=self.host,
+    #         port=self.port,
+    #         user=self.user,
+    #         password=self.password,
+    #         database=self.dbname,
+    #         sslmode=self.sslmode,
+    #         extra_params=extra_params # Add the extra_params dictionary here
+    #     )
 
 class SupabaseConfig_Service(Config):
     """
@@ -180,8 +242,10 @@ class FileConfig(Config):
         self.log_folder = self.get(file_section, 'logsfolder', default = 'logs')
         self.notes_folder = self.get(file_section, 'notesfolder', default = 'notes')
         self.json_folder = self.get(file_section, 'rawfielfolder', default = 'weather/rawfiles')
-        self.data_file = self.get(file_section, 'data_file', default = 'postgres_sensors_devices_data.sql')
-        self.schema_file = self.get(file_section, 'schema_file', default = 'postgres_schema.sql')
+        self.data_file = self.get(file_section, 'data_file', default = 'resources/postgres_sensors_devices_data.sql')
+        self.schema_file = self.get(file_section, 'schema_file', default = 'resources/postgres_schema.sql')
+        self.supabase_schema = self.get(file_section, 'supabase_schema', default = 'resources/supabase_schema.sql')
+        self.processed_json_folder  = self.get(file_section, 'processed_json_folder', default = 'resources/processed_api_climatefiles')
 
 class TimeConfig(Config):
     """
@@ -284,7 +348,6 @@ class HumidifierConfig(Config):
         self.mislevel_medium = self.get(humidifier_section, 'mislevel_medium', default = 5, target_type = int)
         self.mistlevel_high = self.get(humidifier_section, 'mistlevel_high', default = 9, target_type = int)
         
-
 class SensorConfig(Config):
     """
     A subclass for Sensor IDs
@@ -293,7 +356,6 @@ class SensorConfig(Config):
         super().__init__()
         sensor_section = 'sensor'
         self.HTU21D = self.get(sensor_section, 'HTU21D-F', default = 1, target_type = int)
-
 
 class MQTTConfig(Config):
     """

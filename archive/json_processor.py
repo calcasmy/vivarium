@@ -1,4 +1,4 @@
-# vivarium/weather/src/processing/climate_data_processor.py
+# vivarium/weather/src/database/json_processor.py
 """
 A helper class for processing and storing a single climate weather data JSON.
 
@@ -7,13 +7,14 @@ various segments of climate data (location, forecast, daily, hourly, astronomica
 and condition data) into the database, utilizing dedicated query handlers.
 """
 import os
-import json
 import re
+import sys
+import json
 from typing import Optional, Dict, List, Any
 
 # Ensure project root is in path for imports
 if __name__ == "__main__":
-    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..', '..'))
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
 
@@ -31,7 +32,7 @@ from weather.src.database.hour_queries import HourQueries
 logger = LogHelper.get_logger(__name__)
 
 
-class ClimateDataProcessor:
+class JSONProcessor:
     """
     Processes and stores a single climate weather data JSON into the database.
 
@@ -88,7 +89,7 @@ class ClimateDataProcessor:
                 raw_data_dict = json.load(f)
 
             # Pass the parsed dictionary and filename for context
-            return self.process_json_data(raw_data_dict, weather_date, file_name)
+            return self.process_json_data(raw_data_dict, weather_date, file_path)
 
         except json.JSONDecodeError as e:
             logger.error(f"Error decoding JSON from {file_path}: {e}", exc_info=True)
@@ -478,7 +479,7 @@ class ClimateDataProcessor:
         :rtype: bool
         """
         # Check for top-level required keys.
-        required_keys = ['location', 'current', 'forecast']
+        required_keys = ['location', 'forecast']
         for key in required_keys:
             if key not in data:
                 logger.error(f"Schema validation failed for {source_name}: Missing top-level key '{key}'.")

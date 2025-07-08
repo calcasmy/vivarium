@@ -1,12 +1,31 @@
 # src/database/database_operations.py
 import psycopg2
 from psycopg2 import OperationalError as Psycopg2Error
-from psycopg2 import sql # Added for clarity in admin operations if needed
-from typing import Optional, List, Dict
+from psycopg2 import sql
+from typing import Optional, List, Dict, Any
 from utilities.src.config import DatabaseConfig
 from utilities.src.logger import LogHelper
+from dataclasses import dataclass, field
 
 logger = LogHelper.get_logger(__name__)
+
+@dataclass
+class ConnectionDetails:
+    """
+    A dataclass to hold all parameters required to establish a PostgreSQL connection.
+
+    This provides a structured and type-hinted way to pass database credentials
+    and connection information around the application.
+    """
+    host: str
+    port: int
+    user: str
+    password: str
+    dbname: str
+    # Use Optional for parameters that might not always be required.
+    sslmode: Optional[str] = None
+    # Allows for any extra psycopg2 connection parameters to be passed.
+    extra_params: Dict[str, Any] = field(default_factory=dict)
 
 class DatabaseOperations:
     def __init__(self, db_config: Optional[DatabaseConfig] = None):

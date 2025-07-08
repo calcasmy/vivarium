@@ -6,7 +6,7 @@ import time
 import getpass
 import argparse
 import psycopg2
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Tuple
 from psycopg2 import sql, OperationalError, Error as Psycopg2Error
 
 
@@ -21,7 +21,7 @@ if __name__ == "__main__":
 from deploy.src.database.db_setup_strategy import DBSetupStrategy
 
 from utilities.src.logger import LogHelper
-from utilities.src.database_operations import DatabaseOperations
+from utilities.src.database_operations import DatabaseOperations, ConnectionDetails
 from utilities.src.config import SupabaseConfig, FileConfig, WeatherAPIConfig
 from utilities.src.path_utils import PathUtils
 
@@ -127,32 +127,29 @@ class SupabaseSetup(DBSetupStrategy):
             with open(full_script_path, 'r') as f:
                 sql_commands = f.read()
 
-            # --- Pre-process the SQL script to remove incompatible statements ---
-            # 1. Remove comments (both multi-line and single-line).
+             # 1. Remove standard single-line comments and header/footer comments.
+            # This regex is more specific to pg_dump's comment style.
+            logger.info("Removing single-line comments from the schema script.")
             sql_commands = re.sub(r"^[ \t]*--.*$", "", sql_commands, flags=re.MULTILINE)
+            
+            # 2. Remove C-style multi-line comments /* ... */ if they exist.
+            logger.info("Removing multi-line comments (/* ... */) from the schema script.")
             sql_commands = re.sub(r"/\*.*?\*/", "", sql_commands, flags=re.DOTALL)
             
-            # 2. Remove 'ALTER ... OWNER TO ...' statements. These are problematic with
-            # managed services like Supabase, where you cannot change object ownership.
-            # The connected user will automatically own the created objects.
+            # 3. Remove 'ALTER ... OWNER TO ...' statements.
+            # This is the corrected regex. It is line-anchored to prevent it from matching across multiple lines.
             logger.info("Removing 'ALTER ... OWNER TO' statements from the schema script.")
             sql_commands = re.sub(
-                r"ALTER\s+(TABLE|SEQUENCE|VIEW|MATERIALIZED VIEW|FOREIGN TABLE|SCHEMA)\s+.*?OWNER TO\s+\w+;",
+                r"^\s*ALTER\s+(?:TABLE|SEQUENCE|VIEW|MATERIALIZED VIEW|FOREIGN TABLE|SCHEMA)\s+.*?\s+OWNER\s+TO\s+\w+;\s*$",
                 "",
                 sql_commands,
-                flags=re.IGNORECASE | re.DOTALL,
+                flags=re.IGNORECASE | re.MULTILINE,
             )
 
-            # 3. Remove 'DROP ... IF EXISTS ...' statements.
-            # While generally harmless, a well-formed schema should create, not drop.
-            # The script will continue on 'already exists' errors anyway.
-            logger.info("Removing 'DROP ... IF EXISTS' statements from the schema script.")
-            sql_commands = re.sub(
-                r"DROP\s+(TABLE|INDEX|CONSTRAINT|SEQUENCE).*?;",
-                "",
-                sql_commands,
-                flags=re.IGNORECASE | re.DOTALL,
-            )
+            # 4. Normalize whitespace: Remove multiple blank lines.
+            sql_commands = re.sub(r"\n\s*\n", "\n\n", sql_commands)
+            sql_commands = sql_commands.strip()
+
 
             commands_executed_successfully = True
             # Split the cleaned script into individual commands and execute them.
@@ -190,70 +187,77 @@ class SupabaseSetup(DBSetupStrategy):
         except Exception as e:
             logger.error(f"SupabaseSetup: An error occurred while creating tables: {e}", exc_info=True)
             return False
-        # The connection is managed by the calling method (execute_full_setup),
-        # so we do not close it here to prevent premature disconnection.
+        # The connection is now managed by the calling method (orchestrator),
+        # so we do not close it here.
 
-
-    def execute_full_setup(self, sql_script_name: str) -> bool:
+    def execute_full_setup(self, sql_script_name: str) -> Tuple[bool, Optional[DatabaseOperations]]:
         """
         Orchestrates the full Supabase setup process.
         
         This method executes the entire setup sequence, including connection
-        verification, schema creation, and database restart (if applicable).
-        
+        verification and schema creation. It establishes a persistent connection
+        and returns it for use by subsequent data loading steps.
+
         Args:
             sql_script_name: The name of the SQL schema script to be executed.
 
         Returns:
-            True if the full setup is successful, False otherwise.
+            A tuple containing:
+            - True if the full setup is successful, False otherwise.
+            - The DatabaseOperations instance with the active connection on success,
+              or None on failure.
         """
         logger.info("SupabaseSetup: Starting full setup execution.")
         
-        success = False
         try:
             # 1. Verify credentials and connection before starting the full setup.
             if not self.create_database_and_user():
                 logger.error("Supabase connection verification failed. Cannot proceed with setup.")
-                return False
+                return False, None
 
-            # 2. Establish a persistent connection for the duration of the schema setup.
-            # This is crucial for `create_tables` to reuse the same connection.
+            # 2. Establish a persistent connection for the duration of the setup.
+            # This connection will be returned to the orchestrator.
             self.db_ops.connect(custom_config=self._custom_connection_configuration())
             logger.info("Supabase connection established for schema setup.")
 
             # 3. Supabase is a managed service, so no manual restart is needed.
+            # This step still exists to conform to the base class strategy.
             if not self.prompt_for_restart():
                 logger.error("Prompt for restart was not confirmed, aborting.")
-                return False
+                self.db_ops.close() # Clean up connection on abort
+                return False, None
             
             # 4. Create tables using the schema script.
             if not self.create_tables(sql_script_name):
                 logger.error("Failed to create tables using the SQL schema script.")
-                return False
+                self.db_ops.close() # Clean up connection on failure
+                return False, None
                 
             logger.info("Supabase setup process completed successfully.")
-            success = True
-            return success
+            
+            # On success, return the success status and the active db_ops instance.
+            # The caller (orchestrator) is now responsible for closing the connection.
+            return True, self.db_ops
 
         except Exception as e:
             logger.error(f"An unexpected error occurred during Supabase setup: {e}", exc_info=True)
-            return False
-        finally:
-            # Ensure the primary connection opened by execute_full_setup is always closed.
+            # Ensure the connection is closed in case of an unexpected exception
+            # before we return to the orchestrator.
             self.db_ops.close()
-
-    def _custom_connection_configuration(self) -> Dict[str, Any]:
+            return False, None
+            
+    def _custom_connection_configuration(self) -> ConnectionDetails:
         """
         Builds and returns the connection parameters dictionary from SupabaseConfig.
 
         Returns:
-            A dictionary containing the connection parameters for psycopg2.
+            A ConnectionDetails object containing the connection parameters for psycopg2.
         """
-        return {
-            'user': self.db_config.user,
-            'password': self.db_config.password,
-            'host': self.db_config.host,
-            'port': int(self.db_config.port),
-            'dbname': self.db_config.dbname,
-            'sslmode': self.db_config.sslmode  # Supabase requires SSL
-        }
+        return ConnectionDetails(
+            user=self.db_config.user,
+            password=self.db_config.password,
+            host=self.db_config.host,
+            port=int(self.db_config.port),
+            dbname=self.db_config.dbname,
+            sslmode=self.db_config.sslmode
+        )

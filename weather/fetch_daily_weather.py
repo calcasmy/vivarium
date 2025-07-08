@@ -1,245 +1,223 @@
-# src/fetch_daily_weather.py
+# vivarium/src/fetch_daily_weather.py
+"""
+A script to fetch daily historical weather data from an external API
+and store it into the Vivarium database.
+
+This script demonstrates how to integrate with the WeatherAPIClient to
+retrieve weather data and then use the ClimateDataProcessor to parse,
+validate, and persist this data into the database.
+"""
 import os
 import sys
-import os.path
 import json
 import time
-
-from typing import Optional, Dict
+import re
+from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
 
+# Ensure vivarium root is in sys.path to resolve imports correctly.
+# This block is at the very top.
 if __name__ == "__main__":
+    # Go up one level from 'src' to 'vivarium' root
     vivarium_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-
     if vivarium_path not in sys.path:
         sys.path.insert(0, vivarium_path)
 
 from weather.src.atmosphere.weather_api_client import WeatherAPIClient
-
-from weather.src.database.location_queries import LocationQueries
 from weather.src.database.raw_data_queries import RawDataQueries
-from weather.src.database.forecast_queries import ForecastQueries
-from weather.src.database.day_queries import DayQueries
-from weather.src.database.astro_queries import AstroQueries
-from weather.src.database.condition_queries import ConditionQueries
-from weather.src.database.hour_queries import HourQueries
+
+from weather.src.database.json_processor import JSONProcessor
 
 from utilities.src.logger import LogHelper
 from utilities.src.database_operations import DatabaseOperations
-from utilities.src.config import DatabaseConfig, FileConfig
+from utilities.src.config import DatabaseConfig, FileConfig, WeatherAPIConfig
 
+# Initialize core configurations and logger
 db_config = DatabaseConfig()
+file_config = FileConfig()
+weather_api_config = WeatherAPIConfig()
 
 logger = LogHelper.get_logger(__name__)
 
+
 class FetchDailyWeather:
     """
-    A class to fetch and store weather data.
+    A class to fetch and store daily weather data into the Vivarium database.
+
+    This class integrates with an external weather API and uses a dedicated
+    processor to handle the parsing, validation, and storage of the fetched data.
     """
 
-    def __init__(self, db_operations):
+    def __init__(self, db_operations: DatabaseOperations):
         """
-        Initializes the WeatherDataFetcher with database and API clients.
+        Initializes the FetchDailyWeather with database operations and API client.
+
+        :param db_operations: An initialized instance of :class:`DatabaseOperations`
+                              for all database interactions.
+        :type db_operations: DatabaseOperations
         """
         self.db_ops = db_operations
-
         self.weather_client = WeatherAPIClient()
         self.raw_data_db = RawDataQueries(db_operations)
-        self.location_db = LocationQueries(db_operations)
-        self.forecast_db = ForecastQueries(db_operations)
-        self.day_db = DayQueries(db_operations)
-        self.astro_db = AstroQueries(db_operations)
-        self.condition_db = ConditionQueries(db_operations)
-        self.hour_db = HourQueries(db_operations)
-    
+
+        # Initialize the ClimateDataProcessor with the shared DatabaseOperations instance
+        self.json_processor = JSONProcessor(db_operations)
+        logger.info("FetchDailyWeather initialized.")
+
     @staticmethod
-    def script_path() -> str:
-        return os.path.abspath(__file__)
-
-    def get_raw_weather_data(self, date: str, location_lat_long: str = None) -> Optional[Dict]:
+    def _get_raw_files_directory() -> str:
         """
-        Retrieves raw weather data from the database or the API.
+        Determines and creates the directory for storing raw JSON weather files.
 
-        Args:
-            date: The date for which to retrieve the data.
+        The directory is set to 'vivarium/weather/rawfiles' relative to the project root.
 
-        Returns:
-            The raw weather data as a dictionary, or None if it cannot be retrieved.
+        :returns: The absolute path to the raw JSON files directory.
+        :rtype: str
         """
-
-        #Checking if the raw climate data file exists in the local directory.
-        file_config = FileConfig()
-        files_dir = os.path.join(os.path.dirname(FetchDailyWeather.script_path()), file_config.json_folder)
+        # Start from the current script's directory (vivarium/src),
+        # go up one level (to vivarium), then into 'weather' and 'rawfiles'.
+        files_dir = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            '..',
+            'weather',
+            'rawfiles'
+        )
         os.makedirs(files_dir, exist_ok=True)
-        _file = os.path.join(files_dir, date + '.json')
+        return files_dir
 
-        LogHelper.log_newline(logger)
-        if not os.path.exists(_file) or os.path.getsize(_file) == 0:
-            logger.info(f"Raw climate file does not exist for {date} at {files_dir}. Fetching from API.")
-            weather_data = self.weather_client.get_historical_data(date, location_lat_long)
-            if weather_data:
-                logger.debug(f"weather_data: {weather_data}")
-                with open(_file, 'w') as outfile:
-                    json.dump(weather_data, outfile, indent=5)
-        else:
-            logger.info(f"Raw climate file already exists for {date} at {files_dir}.")
-            with open(_file, 'r') as infile:
-                weather_data = json.load(infile)
+    def get_raw_weather_data(self, date: str, location_lat_long: Optional[str] = None) -> Optional[str]:
+        """
+        Retrieves raw weather data, prioritizing a local file cache, then the database,
+        and finally the external API. The retrieved data is always saved to a JSON
+        file, and the file's path is returned.
 
+        :param date: The date (YYYY-MM-DD) for which to retrieve the data.
+        :type date: str
+        :param location_lat_long: Optional latitude,longitude string for the API call.
+                                  Defaults to configured value if None.
+        :type location_lat_long: Optional[str]
+        :returns: The absolute file path of the saved JSON data, or `None` if data could
+                  not be retrieved or saved.
+        :rtype: Optional[str]
+        """
+        # Define the local file path for caching.
+        files_dir = self._get_raw_files_directory()
+        _file_path = os.path.join(files_dir, f"{date}.json")
+
+        LogHelper.log_newline(logger)  # Add a newline for better log readability.
+
+        # 1. Check local file cache first.
+        if os.path.exists(_file_path) and os.path.getsize(_file_path) > 0:
+            logger.info(f"Raw climate file found for {date} at {_file_path}. Processing from file.")
+            # We return the file path, so the processor can handle reading it.
+            return _file_path
+
+        # 2. Check database.
+        # This check for existing raw data ensures we don't refetch from the API
+        # if it's already in the DB. If found, we create a local file from it.
         existing_raw_data = self.raw_data_db.get_raw_data_by_date(date)
         if existing_raw_data:
-            logger.info(f"Raw climate data already exists for {date}. Returning data from database.")
-            return existing_raw_data
-        else:
-            logger.info(f"Raw climate data does not exist for {date}. Adding data to database.")
-            if weather_data:
-                raw_data_id = self.raw_data_db.insert_raw_data(date, weather_data)
-                if raw_data_id:
-                    logger.info(f"Successfully fetched and stored raw climate data for {date}.")
-                    return weather_data
-                else:
-                    logger.error(f"Failed to insert raw climate data for {date}.")
-                    return None
-            else:
-                logger.error(f"Failed to fetch weather data for {date} from API.")
-                return None
-            
-    def handle_location_data(self, weather_data: Dict, date: str) -> Optional[int]:
-        """Handles the retrieval or insertion of location data."""
-
-        if not weather_data:
-            logger.error(f"No weather data to process for {date}.")
-            return
-        else:
+            logger.info(f"Raw climate data already exists in the database for {date}. Creating local file cache.")
             try:
-                location_data = weather_data.get('location', {})
-                latitude = location_data.get('lat')
-                longitude = location_data.get('lon')
-
-                if latitude is None or longitude is None:
-                    logger.error("Latitude or Longitude is missing. Skipping location and subsequent data processing.")
-                    return None
-
-                location_id = self.location_db.get_location_id(latitude, longitude)
-                if not location_id:
-                    location_id = self.location_db.insert_location_data(location_data)
-                    if location_id is None:
-                        logger.error("Failed to insert location data.")
-                        return None
-                    logger.info(f"Inserted new location with ID: {location_id}")
-                else:
-                    logger.info(f"Location already exists with ID: {location_id}")
-                return location_id
+                # Write the data from the database to a local file.
+                with open(_file_path, 'w', encoding='utf-8') as outfile:
+                    json.dump(existing_raw_data, outfile, indent=4)
+                logger.info(f"Saved DB data to local file: {_file_path}.")
+                return _file_path
             except Exception as e:
-                logger.exception(f"An unexpected error occurred: {e}")
+                logger.error(f"Failed to save data from DB to local file {_file_path}: {e}", exc_info=True)
+                # Fall through to API fetch if file creation from DB fails.
 
-    def handle_forecast_data(self, weather_data: Dict, location_id: int, yesterday: str) -> Optional[int]:
+        # 3. Fetch from API if not found locally or in DB.
+        logger.info(f"Raw climate data not found locally or in DB for {date}. Fetching from API.")
+        final_location = location_lat_long if location_lat_long else weather_api_config.lat_long
+        weather_data_from_api = self.weather_client.get_historical_data(date, final_location)
 
-        """Handles the processing of forecast data."""
-        forecast_data = weather_data.get('forecast', {}).get('forecastday', [])
-        if not forecast_data:
-            logger.warning(f"No forecast data found for {yesterday}.")
-            return
-
-        for forecast_day in forecast_data:
-            forecast_date = forecast_day.get('date')
-            if not forecast_date:
-                logger.warning("Forecast day without date.")
-                continue  # Continue to the next forecast_day
-
-            if not self.forecast_db.get_forecast_by_location_and_date(location_id, forecast_date):
-                forecast_id = self.forecast_db.insert_forecast_data(location_id, forecast_day)
-                if not forecast_id:
-                    logger.error(f"Failed to insert forecast data for {forecast_date}.")
-                    continue  # Continue to the next forecast_day
-                logger.info(f"Successfully stored forecast data for {forecast_date}.")
-            else:
-                logger.info(f"Forecast data already exists for location ID {location_id} and date {forecast_date}.")
-
-            # 2.1 Handle Day Data
-            self.handle_day_data(location_id, forecast_date, forecast_day.get('day', {}))
-
-            # 2.2 Handle Astro Data
-            self.handle_astro_data(location_id, forecast_date, forecast_day.get('astro', {}))
-
-            # 2.3
-            self.handle_hour_data(location_id, forecast_date, forecast_day.get('hour', []))
-
-    def handle_day_data(self, location_id: int, date: str, day_data: Dict) -> None:
-        """Handles the processing of day data."""
-        if day_data:
-            condition_data = day_data.get('condition', {})
-                # Inserting Condition data of the day.
-            if condition_data:
-                if not self.condition_db.get_condition(day_data.get('condition', {}).get('code')):
-                    condition_id = self.condition_db.insert_condition(day_data.get('condition', []))
-                    logger.info(f"Successfully stored condition data for {date}.")
-                else:
-                    logger.info(f"Condition data already exists for location ID {location_id} and date {date}.")
-            else:
-                logger.warning(f"Condition data is missing 'code' for {date}")
-
-            if not self.day_db.get_day_data(location_id, date):
-                self.day_db.insert_day_data(location_id, date, day_data)
-                logger.info(f"Successfully stored day data for {date}.")
-            else:
-                logger.info(f"Day data already exists for location ID {location_id} and date {date}.")
+        if weather_data_from_api:
+            logger.debug(f"Successfully fetched weather_data from API for {date}.")
+            # Cache the fetched data to a local file.
+            try:
+                with open(_file_path, 'w', encoding='utf-8') as outfile:
+                    json.dump(weather_data_from_api, outfile, indent=4)
+                logger.info(f"Saved fetched weather data to local file: {_file_path}.")
+                return _file_path
+            except Exception as e:
+                logger.error(f"Failed to save fetched weather data to local file {_file_path}: {e}", exc_info=True)
+                return None  # Return None if saving to file fails.
         else:
-            logger.warning(f"Day data unavailable for {date}")
+            logger.error(f"Failed to fetch weather data from API for {date}.")
+            return None
 
-    def handle_astro_data(self, location_id: int, date: str, astro_data: Dict) -> None:
-        if not self.astro_db.get_astro_data(location_id, date):
-            astro_id = self.astro_db.insert_astro_data(location_id, date, astro_data)
-            logger.info(f"Successfully stored astro data for {date}.")
-        else:
-            logger.info(f"Astro data already exists for location ID {location_id} and date {date}.")
-
-    def handle_hour_data(self, location_id: int, date: str, hour_data: Dict) -> None:
-        """Handles the processing of hourly data."""
-        self.hour_db.insert_hour_data(location_id, date, hour_data)
-        logger.info(f"Successfully stored hour data for {date}.")
-
-    def fetch_and_store_weather_data(self, yesterday: str = None, location_latlong: str = None):
+    def fetch_and_store_weather_data(self, target_date: Optional[str] = None, location_latlong: Optional[str] = None) -> bool:
         """
-        Fetches daily weather data and stores it in the database.
+        Fetches daily weather data and stores it in the database by processing a file.
+
+        :param target_date: The specific date (YYYY-MM-DD) for which to fetch data.
+                            If `None`, defaults to yesterday's date.
+        :type target_date: Optional[str]
+        :param location_latlong: Optional latitude,longitude string to override the default
+                                 API location.
+        :type location_latlong: Optional[str]
+        :returns: `True` if data fetching and storing is successful, `False` otherwise.
+        :rtype: bool
         """
+        process_date = target_date if target_date else (datetime.now().date() - timedelta(days=1)).strftime('%Y-%m-%d')
+        logger.info(f"Attempting to fetch and store weather data for date: {process_date}.")
+
         try:
-            if not yesterday:
-                yesterday = (datetime.now().date() - timedelta(days=1)).strftime('%Y-%m-%d')
-            weather_data = self.get_raw_weather_data(yesterday, location_latlong)
+            # This call now returns the file path, not the data dictionary.
+            file_path = self.get_raw_weather_data(process_date, location_latlong)
 
-            if not weather_data:
-                logger.error(f"No weather data to process for {yesterday}.")
-                return
+            if not file_path:
+                logger.error(f"No weather data file could be retrieved or created for {process_date}. Cannot proceed with storing.")
+                return False
 
-            # 1. Handle Location Data
-            location_id = self.handle_location_data(weather_data, yesterday)
-
-            # 2. Handle Forecast Data
-            forecast_id = self.handle_forecast_data(weather_data, location_id, yesterday)
+            # Delegate the processing and storing of the *file* to the ClimateDataProcessor.
+            if self.json_processor.process_json_file(file_path):
+                logger.info(f"Successfully processed and stored weather data from file: {os.path.basename(file_path)}.")
+                return True
+            else:
+                logger.error(f"Failed to process and store weather data from file {os.path.basename(file_path)} using ClimateDataProcessor.")
+                return False
 
         except Exception as e:
-            logger.exception(f"An unexpected error occurred: {e}")
+            logger.exception(f"An unexpected error occurred during fetch and store operation: {e}")
+            return False
 
 def main():
     """
-    Main function to fetch weather data.
+    Main function to fetch and store daily weather data.
+
+    Connects to the database, initializes the data fetcher, and executes
+    the data fetching and storage process.
     """
-    db_operations = DatabaseOperations()
-    db_operations.connect()
+    db_operations = DatabaseOperations(db_config)
     try:
-        get_weather_data = FetchDailyWeather(db_operations)  # Pass the DatabaseOperations instance
-        # get_weather_data.fetch_and_store_weather_data()
-        # -- Alternateive method calls if data for a specific date (or) date, location (lattitude and longitude) is required
-        get_weather_data.fetch_and_store_weather_data('2025-06-24')
-        # get_weather_data.fetch_and_store_weather_data('2025-05-18', '5.98,116.07')
+        # Establish a single connection for the duration of the main process.
+        db_operations.connect()
+        logger.info("Database connection established for main weather fetching process.")
+
+        weather_fetcher = FetchDailyWeather(db_operations)
+
+        # Example method calls:
+        # 1. Fetch yesterday's data (default behavior if no date is provided)
+        weather_fetcher.fetch_and_store_weather_data()
+        
+        # 2. Fetch data for a specific date (e.g., 2025-06-24)
+        # weather_fetcher.fetch_and_store_weather_data('2025-06-27') 
+        
+        # 3. Fetch data for a specific date and location (e.g., 2025-05-18, 5.98,116.07)
+        # weather_fetcher.fetch_and_store_weather_data('2025-05-18', '5.98,116.07') 
+        
     except Exception as e:
-        logger.exception(f"An unexpected error occurred: {e}")
+        logger.exception(f"An unexpected error occurred in main execution: {e}")
     finally:
-        db_operations.close()  # Close the connection in the finally block
+        # Ensure the database connection is closed at the end of the script.
+        db_operations.close()
+        logger.info("Database connection closed after main weather fetching process.")
 
 if __name__ == "__main__":
     start_time = time.time()
     main()
     end_time = time.time()
-    logger.info(f"Script execution time: {end_time - start_time:.2f} seconds")
+    logger.info(f"Total script execution time: {end_time - start_time:.2f} seconds")
