@@ -1,9 +1,9 @@
 # src/database/day_queries.py
 
 from typing import Dict, Optional
-from utilities.src.database_operations import DatabaseOperations
+from utilities.src.db_operations import DBOperations
 
-class DayQueries(DatabaseOperations):
+class DayQueries(DBOperations):
     def __init__(self, db_operations):
         super().__init__()
         self.conn = db_operations.get_connection()

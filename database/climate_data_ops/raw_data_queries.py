@@ -7,7 +7,7 @@ from typing import Dict, Optional
 
 from utilities.src.logger import LogHelper
 from utilities.src.db_operations import DBOperations
-from strategies.src.base_query import BaseQuery
+from database.climate_data_ops.base_query_strategy import BaseQuery
 
 
 logger = LogHelper.get_logger(__name__)

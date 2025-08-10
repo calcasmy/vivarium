@@ -17,8 +17,8 @@ if vivarium_path not in sys.path:
     sys.path.insert(0, vivarium_path)
 
 from utilities.src.logger import LogHelper
-from utilities.src.database_operations import DatabaseOperations
-from utilities.src.config import TimeConfig # Only for getting PROCESS_TIMEOUT
+from utilities.src.db_operations import DBOperations
+from utilities.src.config import TimeConfig
 
 from terrarium.src.database.sensor_queries import SensorQueries
 from terrarium.src.database.sensor_data_queries import SensorDataQueries
@@ -34,7 +34,7 @@ class TerrariumSensorReader:
     using a separate process to handle potential sensor read timeouts.
     It stores the data in the database.
     """
-    def __init__(self, db_operations: DatabaseOperations):
+    def __init__(self, db_operations: DBOperations):
         """
         Initializes the sensor reader, database operations, and retrieves timeout setting.
 

@@ -14,7 +14,7 @@ if vivarium_path not in sys.path:
 
 from utilities.src.logger import LogHelper
 from utilities.src.config import MisterConfig, SensorConfig # Assuming TempConfig holds sensor thresholds
-from utilities.src.database_operations import DatabaseOperations # For type hinting
+from utilities.src.db_operations import DBOperations # For type hinting
 from terrarium.src.controllers.mister_controller import MisterControllerV2
 from scheduler.src.device_scheduler_base import DeviceSchedulerBase # Import the base scheduler
 from terrarium.src.database.sensor_data_queries import SensorDataQueries
@@ -28,7 +28,7 @@ class MisterScheduler(DeviceSchedulerBase):
     """
     Manages the scheduling and automatic control of the vivarium mister.
     """
-    def __init__(self, scheduler: BlockingScheduler, db_operations: DatabaseOperations, mister_controller: MisterControllerV2):
+    def __init__(self, scheduler: BlockingScheduler, db_operations: DBOperations, mister_controller: MisterControllerV2):
         """
         Initializes the MisterScheduler.
 

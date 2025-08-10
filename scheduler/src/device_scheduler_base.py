@@ -11,7 +11,7 @@ if vivarium_path not in sys.path:
     sys.path.insert(0, vivarium_path)
 
 from utilities.src.logger import LogHelper
-from utilities.src.database_operations import DatabaseOperations
+from utilities.src.db_operations import DBOperations
 
 logger = LogHelper.get_logger(__name__)
 
@@ -20,7 +20,7 @@ class DeviceSchedulerBase:
     A base class for scheduling device-related jobs.
     Provides common methods for interacting with APScheduler and shared resources.
     """
-    def __init__(self, scheduler: BlockingScheduler, db_operations: DatabaseOperations):
+    def __init__(self, scheduler: BlockingScheduler, db_operations: DBOperations):
         """
         Initializes the DeviceSchedulerBase.
 

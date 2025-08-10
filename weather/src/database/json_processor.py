@@ -19,7 +19,7 @@ if __name__ == "__main__":
         sys.path.insert(0, project_root)
 
 from utilities.src.logger import LogHelper
-from utilities.src.database_operations import DatabaseOperations
+from utilities.src.db_operations import DBOperations, ConnectionDetails
 
 from weather.src.database.location_queries import LocationQueries
 from weather.src.database.raw_data_queries import RawDataQueries
@@ -41,18 +41,18 @@ class JSONProcessor:
     database tables.
     """
 
-    def __init__(self, db_operations: DatabaseOperations):
+    def __init__(self, db_operations: DBOperations):
         """
-        Initializes the ClimateDataProcessor with a DatabaseOperations instance.
+        Initializes the ClimateDataProcessor with a DBOperations instance.
 
-        :param db_operations: An initialized instance of :class:`DatabaseOperations`
+        :param db_operations: An initialized instance of :class:`DBOperations`
                               for all database interactions.
-        :type db_operations: DatabaseOperations
+        :type db_operations: DBOperations
         """
         self.db_ops = db_operations
         self._current_location_id: Optional[int] = None  # To hold location_id during processing
         
-        # Initialize all database query handlers with the same DatabaseOperations instance
+        # Initialize all database query handlers with the same DBOperations instance
         self.raw_data_db = RawDataQueries(self.db_ops)
         self.location_db = LocationQueries(self.db_ops)
         self.forecast_db = ForecastQueries(self.db_ops)

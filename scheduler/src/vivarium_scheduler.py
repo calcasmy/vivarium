@@ -4,74 +4,77 @@
 import os
 import sys
 import traceback
-import subprocess # Keep this if fetch_daily_weather.py is still an external script
+from datetime import time as datetime_time, date, datetime, timedelta
 
-from datetime import time as datetime_time,date, datetime, timedelta
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 from apscheduler.triggers.interval import IntervalTrigger
 
+# --- Path Configuration ---
 # Get the absolute path to the 'vivarium' directory
 vivarium_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-
-# Add 'vivarium' to the Python path if it's not already there
 if vivarium_path not in sys.path:
     sys.path.insert(0, vivarium_path)
 
-# Importing utilities package
+# --- Project Imports ---
 from utilities.src.logger import LogHelper
-from utilities.src.config import WeatherAPIConfig
-from utilities.src.database_operations import DatabaseOperations
-
-# PRIMARY CHANGE: Import the NEW TerrariumSensorReader
+from utilities.src.db_operations import DBOperations, ConnectionDetails
+from utilities.src.config import SchedulerConfig, TimeConfig, DatabaseConfig
 from terrarium.src.sensors.terrarium_sensor_reader import TerrariumSensorReader
-
-# Import device controller classes
 from terrarium.src.controllers.light_controller import LightController
 from terrarium.src.controllers.mister_controller import MisterControllerV2
-# from terrarium.src.controllers.humidifier_control import HumidiferController # Uncomment when ready
-
-# New: Import scheduler classes
 from scheduler.src.light_scheduler import LightScheduler
 from scheduler.src.mister_scheduler import MisterScheduler
-
-# New: Import Sensor Queries for temperature/humidity data (likely not directly needed in scheduler's main file, but ok for now)
-from weather.fetch_daily_weather import FetchDailyWeather
 
 logger = LogHelper.get_logger(__name__)
 
 class VivariumScheduler:
     """
-        Scheduler class for all vivarium [Aquarium, Terrarium etc.] related jobs
+    Primary scheduler class responsible for orchestrating all vivarium-related jobs.
+
+    This class initializes the core components, sets up job listeners for error handling
+    and success notifications, performs a comprehensive system boot check, and schedules
+    periodic tasks for various vivarium functionalities (e.g., sensor reading,
+    light control, misting, weather data fetching).
     """
+
     def __init__(self):
-        self.scheduler = BlockingScheduler()
-        self.scheduler.add_listener(self.job_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
+        """
+        Initializes the VivariumScheduler, its components, and sets up job listeners.
 
-        self.weather_config = WeatherAPIConfig()
+        This involves:
+        - Setting up the APScheduler's BlockingScheduler.
+        - Establishing a database connection.
+        - Instantiating all necessary device controllers (Light, Mister, Humidifier, etc.).
+        - Instantiating the primary sensor reader.
+        - Initializing sub-schedulers for specific device management (LightScheduler, MisterScheduler).
+        - Performing a critical system boot check to ensure initial safe states and configurations.
+        """
+        self.scheduler: BlockingScheduler = BlockingScheduler()
+        self.scheduler.add_listener(self._job_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
+        logger.info("APScheduler initialized and listener added.")
 
-        # Centralized Database Operations
-        self.db_operations = DatabaseOperations()
-        self.db_operations.connect()
+        self.scheduler_config: SchedulerConfig = SchedulerConfig()
+        self.db_config: DatabaseConfig = DatabaseConfig()
+        self.db_operations: DBOperations = DBOperations()
+        self.db_operations.connect(self._db_connectiondetails())
         logger.info("Database connection established for VivariumScheduler.")
 
-        # Initialize Device Controllers (These are instantiated ONCE)
-        self.light_controller = LightController(db_operations=self.db_operations)
-        self.mister_controller = MisterControllerV2(db_operations=self.db_operations)
-        # self.humidifier_controller = HumidiferController(db_operations=self.db_operations) # Uncomment when ready
+        self.light_controller: LightController = LightController(db_operations=self.db_operations)
+        self.mister_controller: MisterControllerV2 = MisterControllerV2(db_operations=self.db_operations)
+        # self.humidifier_controller: HumidiferController = HumidiferController(db_operations=self.db_operations) # Uncomment when ready
+        logger.info("Device controllers initialized.")
 
-        # NEW: Initialize the Sensor Reader (Instantiated ONCE)
-        self.terrarium_sensor_reader = TerrariumSensorReader(db_operations=self.db_operations)
+        self.terrarium_sensor_reader: TerrariumSensorReader = TerrariumSensorReader(db_operations=self.db_operations)
         logger.info("Terrarium Sensor Reader initialized.")
 
-
-        # Initialize specific device schedulers
-        self.light_scheduler = LightScheduler(
+        # Initialize specific device schedulers (responsible for managing their own job scheduling)
+        self.light_scheduler: LightScheduler = LightScheduler(
             scheduler=self.scheduler,
             db_operations=self.db_operations,
             light_controller=self.light_controller
         )
-        self.mister_scheduler = MisterScheduler(
+        self.mister_scheduler: MisterScheduler = MisterScheduler(
             scheduler=self.scheduler,
             db_operations=self.db_operations,
             mister_controller=self.mister_controller
@@ -79,177 +82,181 @@ class VivariumScheduler:
         logger.info("VivariumScheduler and sub-schedulers initialized.")
 
         self._perform_system_boot_check()
-        
+        logger.info("System boot check completed.")
 
     def __del__(self):
         """
-        Ensures database connection is closed when scheduler object is destroyed.
+        Ensures the database connection is gracefully closed when the VivariumScheduler
+        object is about to be destroyed.
+
+        This helps prevent resource leaks and ensures data integrity.
         """
-        if self.db_operations:
+        if self.db_operations: #and self.db_operations.is_connected():
             self.db_operations.close()
             logger.info("Database connection closed by VivariumScheduler (from __del__).")
 
-    def job_listener(self, event):
-        if event.exception:
-            logger.error(f"Job '{event.job_id}' raised {event.exception.__class__.__name__}: {event.exception}")
-            logger.error(f"Traceback for job '{event.job_id}':\n{traceback.format_exc()}")
-
-            # -- Retry logic for 'fetch daily weather
-            if event.job_id == 'fetch_weather_daily':
-                retry_interval_hours = self.weather_config.get('weather_fetch_interval', default=2, type = int)
-                retry_time = datetime.now() + timedelta(hours = retry_interval_hours)
-                self.scheduler.add_job(
-                    self._run_external_script,
-                    'date',
-                    run_date=retry_time,
-                    args=[FetchDailyWeather.script_path()],
-                    id='fetch_weather_daily_retry',
-                    replace_existing=True # If previous retry failed, replace it
-                )
-                logger.warning(f"Job 'fetch_weather_daily' failed. Retrying in 2 hours at {retry_time.strftime('%Y-%m-%d %H:%M:%S')}.")
-
-        elif event.job_id == 'fetch_weather_daily' or event.job_id == 'fetch_weather_daily_retry':
-            logger.info(f"Job '{event.job_id}' successfully finished. Triggering light schedule update.")
-            self.light_scheduler.schedule_daily_lights() # Call the light scheduler's method
-        elif event.job_id == 'run_current_status':
-            logger.info(f"Job '{event.job_id}' successfully finished. Triggering environmental checks.")
-            self.mister_scheduler.check_and_run_mister()
-
-    def _perform_system_boot_check(self):
+    def _job_listener(self, event):
         """
-        Performs a comprehensive system boot check for all connected components.
-        This runs only once when the scheduler is initialized.
-        It checks equipment availability, sets initial states, and performs
-        any necessary initial logic (like light schedule setup).
+        Listener for APScheduler job events (execution and error).
+
+        This method handles logging for job success/failure and implements
+        specific logic, such as retrying failed weather fetches or triggering
+        dependent actions upon job completion.
+
+        :param event: The APScheduler event object containing job details.
+        :type event: apscheduler.events.JobEvent
+        """
+        if event.exception:
+            logger.error(f"Job '{event.job_id}' raised an exception: {event.exception.__class__.__name__}: {event.exception}")
+            logger.error(f"Traceback for job '{event.job_id}':\n{traceback.format_exc()}")
+        else:
+            logger.info(f"Job '{event.job_id}' completed successfully.")
+            if event.job_id == 'read_sensor_data':
+                logger.info(f"Job '{event.job_id}' finished. Triggering environmental checks for mister.")
+                self.mister_scheduler.check_and_run_mister()
+
+    def _update_lights_job(self) -> None:
+        """
+        Job method to fetch the latest sunrise/sunset data and update the light schedule.
+        """
+        logger.info("Executing light schedule update job.")
+        self.light_scheduler.schedule_daily_lights()
+
+    def _perform_system_boot_check(self) -> None:
+        """
+        Performs a comprehensive system boot check for all connected vivarium components.
+
+        This method runs only once when the VivariumScheduler is initialized.
+        It's responsible for:
+        - Ensuring devices are in a safe initial state (e.g., lights/mister OFF).
+        - Setting up initial schedules (e.g., today's light schedule).
+        - Performing initial sensor readings to confirm functionality.
+        - Catching and logging errors for each component during boot.
         """
         logger.info("--- Starting System Boot Check ---")
 
-        # -- Light System Check --
+        # --- Light System Check ---
         try:
             logger.info("Checking Light System...")
-            
-            # 1. Ensure light is OFF initially (Safe State)
-            self.light_controller.control_light(action = "off")
-
-             # 2. Set up today's schedule and perform immediate check
-            # This call will:
-            #   a) Fetch today's sunrise/sunset.
-            #   b) Update light_controller's internal schedule.
-            #   c) Perform the immediate check (control_light(action=None))
-            #      to set light to ON/OFF based on current time and new schedule.
-            #   d) Schedule today's specific ON/OFF cron jobs.
-            # This is your one-time light state check on boot.
+            self.light_controller.control_light(action="off")
+            logger.info("Light system: Ensured initial state is OFF.")
             self.light_scheduler.schedule_daily_lights()
             logger.info("Light system: Daily schedule set up and immediate state adjusted based on current time.")
-            
         except Exception as e:
             logger.error(f"Error during Light System boot check: {e}", exc_info=True)
 
-        # -- Mister System Check --
+        # --- Mister System Check ---
         try:
             logger.info("Checking Mister System...")
-            # 1. Ensure mister is OFF initially (safe state)
             self.mister_controller.control_mister(action="off")
             logger.info("Mister system: Initial state set to OFF.")
-
-            self.mister_scheduler.check_and_run_mister() # Added this call
+            self.mister_scheduler.check_and_run_mister()
             logger.info("Mister system: Current state adjusted based on environmental conditions.")
-            
         except Exception as e:
             logger.error(f"Error during Mister System boot check: {e}", exc_info=True)
-            # Add error handling (e.g., send notification, disable mister functionality).
 
         # --- Sensor System Check ---
         try:
             logger.info("Checking Sensor Systems...")
-            # Attempt to read data to confirm sensors are operational.
             self.terrarium_sensor_reader.read_and_store_data()
             logger.info("Sensor systems: Performed initial reading. Check logs for sensor status.")
         except Exception as e:
             logger.error(f"Error during Sensor System boot check: {e}", exc_info=True)
-        
         logger.info("--- System Boot Check Complete ---")
 
-    def schedule_jobs(self):
+    def _db_connectiondetails(self) -> ConnectionDetails:
+        """
+        Creates a ConnectionDetails object for the database connection.
+
+        :returns: A ConnectionDetails object with the database connection details.
+        :rtype: ConnectionDetails
+        """
+        if self.scheduler_config.application_db_type == 'remote':
+            return ConnectionDetails(
+                host=self.db_config.postgres_remote_connection.host,
+                port=self.db_config.postgres_remote_connection.port,
+                user=self.db_config.postgres_remote_connection.user,
+                password=self.db_config.postgres_remote_connection.password,
+                dbname=self.db_config.postgres_remote_connection.dbname,
+                sslmode=None
+            )
+        else:
+            return ConnectionDetails(
+                host=self.db_config.postgres_local_connection.host,
+                port=self.db_config.postgres_local_connection.port,
+                user=self.db_config.postgres_local_connection.user,
+                password=self.db_config.postgres_local_connection.password,
+                dbname=self.db_config.postgres_local_connection.dbname,
+                sslmode=None
+            )
+
+    def schedule_jobs(self) -> None:
+        """
+        Schedules the core periodic and cron jobs for the vivarium system.
+
+        This includes:
+        - Daily fetching of weather data (e.g., sunrise/sunset times).
+        - Regular reading and storing of terrarium sensor data.
+        """
         logger.info("Scheduling core Vivarium jobs.")
-        # Schedule fetch_daily_weather.py to run once a day at 1:00 AM
-        fetch_weather_script = FetchDailyWeather.script_path()
-        self.scheduler.add_job(
-            self._run_external_script,
-            'cron',
-            hour=1,
-            minute=0,
-            args=[fetch_weather_script],
-            id='fetch_weather_daily'
-        )
-        logger.info(f"Scheduled {os.path.basename(fetch_weather_script)} to run daily at 01:00.")
 
-        # # NEW: Schedule the method of the instantiated TerrariumSensorReader
+        # 1. At 4:00 AM everyday, fetch last record to adjust lights
+        # self.scheduler.add_job(
+        #     self._update_lights_job,
+        #     'cron',
+        #     hour = self.scheduler_config.schedule_light_hour,
+        #     minute = self.scheduler_config.schedule_light_minute,
+        #     id='update_lights_daily'
+        # )
+        # logger.info(f"Scheduled light schedule update to run daily at {self.scheduler_config.schedule_light_hour:02d}:{self.scheduler_config.schedule_light_minute:02d}.")
+
+        # 1a. For testing, run light update more frequently
         self.scheduler.add_job(
-            self.terrarium_sensor_reader.read_and_store_data, # <--- THIS IS THE KEY CHANGE
+            self._update_lights_job,
             'interval',
-            minutes=5, # You can set this lower for testing (e.g., 0.5 or 1) then back to 5
-            id='run_current_status')
-        logger.info(f"Scheduled Terrarium sensor reading to run every 5 minutes.")
+            seconds=30, # For testing, run more frequently
+            id='update_lights_daily_fast'
+        )
+        logger.info("Scheduled light schedule update to run every 30 seconds (TESTING).")
 
-        # -- Testing purposes --
-        # ** Schedule fetch_daily_weather.py to run RIGHT NOW
-        # fetch_weather_script = FetchDailyWeather.script_path()
+        # 2. Read sensor status every 5 min, turn on mister if needed
         # self.scheduler.add_job(
-        #     self._run_external_script,
-        #     'date',
-        #     run_date=datetime.now(), # Set the run date to the current time
-        #     args=[fetch_weather_script],
-        #     id='fetch_weather_daily')
-        # logger.info(f"Scheduled {os.path.basename(fetch_weather_script)} to run immediately.")
-
-        # self.scheduler.add_job(
-        #     self.terrarium_sensor_reader.read_and_store_data, # <--- THIS IS THE KEY CHANGE
+        #     self.terrarium_sensor_reader.read_and_store_data,
         #     'interval',
-        #     seconds=30,
-        #     id='run_current_status')
-        # logger.info(f"Scheduled Terrarium sensor reading to run every 5 minutes.")
-        
-    def _run_external_script(self, script_path):
-        """
-        Helper method to run external Python scripts using subprocess.
-        This is kept in VivariumScheduler as it's a general utility.
-        """
-        script_name = os.path.basename(script_path)
-        logger.info(f"Running external script: {script_name}")
-        try:
-            process = subprocess.Popen(['python3', script_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, stderr = process.communicate(timeout=60) # Increased timeout to 60s
-            if process.returncode == 0:
-                logger.info(f"Script {script_name} executed successfully.")
-                if stdout:
-                    logger.debug(f"Stdout for {script_name}:\n{stdout.decode().strip()}")
-            else:
-                logger.error(f"Script {script_name} failed with error (Return Code: {process.returncode}).")
-                if stderr:
-                    logger.error(f"Stderr for {script_name}:\n{stderr.decode().strip()}")
-        except subprocess.TimeoutExpired:
-            logger.error(f"Script {script_name} timed out after {60} seconds.")
-            process.kill()
-        except FileNotFoundError:
-            logger.error(f"Script not found: {script_name} at path {script_path}")
-        except Exception as e:
-            logger.error(f"Unexpected error running script {script_name}: {e}")
+        #     minutes = self.scheduler_config.scheule_sensor_read,
+        #     id='read_sensor_data'
+        # )
+        # logger.info(f"Scheduled Terrarium sensor reading to run every {self.scheduler_config.scheule_sensor_read} minutes.")
 
-    def run(self):
+        # 2a. For testing, run sensor reading more frequently
+        # self.scheduler.add_job(
+        #     self.terrarium_sensor_reader.read_and_store_data,
+        #     'interval',
+        #     seconds=30, # For testing, run more frequently
+        #     id='read_sensor_data_fast'
+        # )
+        # logger.info(f"Scheduled Terrarium sensor reading to run every 30 seconds (TESTING).")
+
+    def run(self) -> None:
+        """
+        Starts the main loop of the Vivarium Scheduler.
+        """
         logger.info("Vivarium Scheduler starting main loop.")
         self.schedule_jobs()
 
         try:
             self.scheduler.start()
-        except (KeyboardInterrupt, SystemExit):
-            logger.info("Vivarium Scheduler stopping gracefully...")
+        except (KeyboardInterrupt, SystemExit) as e:
+            logger.info(f"Vivarium Scheduler stopping gracefully due to {e.__class__.__name__}...")
+        except Exception as e:
+            logger.critical(f"Vivarium Scheduler encountered a critical error and will stop: {e}", exc_info=True)
         finally:
-            # Ensure DB connection is closed even if an unexpected error occurs
+            # Ensure DB connection is closed even if an unexpected error occurs or on shutdown
             if self.db_operations:
                 self.db_operations.close()
-                logger.info("Database connection closed")
+                logger.info("Database connection closed.")
             logger.info("Vivarium Scheduler stopped.")
+
 
 if __name__ == "__main__":
     scheduler = VivariumScheduler()

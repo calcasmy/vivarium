@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Any, Union
 
 from utilities.src.logger import LogHelper
 from utilities.src.db_operations import DBOperations
-from strategies.src.base_query import BaseQuery
+from database.climate_data_ops.base_query_strategy import BaseQuery
 from database.climate_data_ops.condition_queries import ConditionQueries # Corrected import path assuming it's in the same climate_data_ops dir
 
 

@@ -1,7 +1,7 @@
 from typing import Dict, Optional, List
-from utilities.src.database_operations import DatabaseOperations  # Assuming this is where DatabaseOperations is defined.
+from utilities.src.db_operations import DBOperations
 
-class SensorDataQueries(DatabaseOperations):
+class SensorDataQueries(DBOperations):
     """
     This class provides methods to interact with the sensor_readings table in the database.
     The table schema is defined as:
@@ -14,7 +14,7 @@ class SensorDataQueries(DatabaseOperations):
     );
     """
 
-    def __init__(self, db_operations: DatabaseOperations):
+    def __init__(self, db_operations: DBOperations):
         """
         Initializes the SensorDataQueries object.
 

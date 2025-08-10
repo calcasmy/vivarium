@@ -140,7 +140,7 @@ class JSONDataLoader(DataLoaderStrategy):
         logger.info(f"Raw climate data loading completed. Processed {processed_count} files. Overall success: {success}")
         return success
 
-    def execute_full_data_load(self, dump_file_path: Optional[str] = None) -> bool:
+    def execute_data_load(self, dump_file_path: Optional[str] = None) -> bool:
         """
         Orchestrates the full data loading process for raw climate data.
 
@@ -313,7 +313,7 @@ if __name__ == "__main__":
 
     # Run the full data load
     logger.info("Attempting full data load...")
-    result = loader.execute_full_data_load()
+    result = loader.execute_data_load()
     logger.info(f"Full data load test result: {result}")
 
     # Clean up dummy files/folders if created for testing

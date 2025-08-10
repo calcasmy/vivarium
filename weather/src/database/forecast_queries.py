@@ -1,9 +1,9 @@
 # src/database/forecast_queries.py
 
 from typing import Optional, Dict
-from utilities.src.database_operations import DatabaseOperations
+from utilities.src.db_operations import DBOperations
 
-class ForecastQueries(DatabaseOperations):
+class ForecastQueries(DBOperations):
     def __init__(self, db_operations):
         super().__init__()
         self.conn = db_operations.get_connection()

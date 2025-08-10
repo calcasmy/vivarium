@@ -17,3 +17,4 @@ config_secrets.ini
 vivarium_backup.sql
 cloudnotes.txt
 resources/
+archive/

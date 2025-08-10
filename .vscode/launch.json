@@ -2,416 +2,105 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug Manual Control (Light ON)",
+            "name": "Python: Attach to Orchestrator (sudo)",
             "type": "debugpy",
+            "request": "attach",
+            "justMyCode": false,
+            "connect": {
+                "host": "localhost",
+                "port": 5678
+            },
+            "preLaunchTask": "Launch Orchestrator (sudo)"
+        },
+        {
+            "name": "Python: Debug Light Controller (ON)",
+            "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/manual_control/src/control_device.py",
-            "args": ["--device", "light", "--action", "on"],
-            "cwd": "${workspaceFolder}",
+            "program": "${workspaceFolder}/terrarium/src/controllers/light_controller.py",
             "console": "integratedTerminal",
+            "sudo": true,
             "justMyCode": true,
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
+            "env": {},
+            "python": "${workspaceFolder}/.vivaenv/bin/python",
+            "args": ["on"]
         },
         {
-            "name": "Debug Manual Control (Light OFF)",
-            "type": "debugpy",
+            "name": "Python: Debug Light Controller (OFF)",
+            "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/manual_control/src/control_device.py",
-            "args": ["--device", "light", "--action", "off"],
-            "cwd": "${workspaceFolder}",
+            "program": "${workspaceFolder}/terrarium/src/controllers/light_controller.py",
             "console": "integratedTerminal",
+            "sudo": true,
             "justMyCode": true,
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
+            "env": {},
+            "python": "${workspaceFolder}/.vivaenv/bin/python",
+            "args": ["off"]
         },
         {
-            "name": "Debug Manual Control (Light Status)",
-            "type": "debugpy",
+            "name": "Python: Debug Mister Controller (Manual Run)",
+            "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/manual_control/src/control_device.py",
-            "args": ["--device", "light", "--action", "status"],
-            "cwd": "${workspaceFolder}",
+            "program": "${workspaceFolder}/terrarium/src/controllers/mister_controller.py",
             "console": "integratedTerminal",
+            "sudo": true,
             "justMyCode": true,
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
+            "python": "${workspaceFolder}/.vivaenv/bin/python",
+            "args": ["run", "--duration", "5"]
         },
         {
-            "name": "Debug Manual Control (Mister ON)",
-            "type": "debugpy",
+            "name": "Python: Debug Mister Controller (Auto Check)",
+            "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/manual_control/src/control_device.py",
-            "args": ["--device", "mister", "--action", "on"],
-            "cwd": "${workspaceFolder}",
+            "program": "${workspaceFolder}/terrarium/src/controllers/mister_controller.py",
             "console": "integratedTerminal",
+            "sudo": true,
             "justMyCode": true,
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
+            "python": "${workspaceFolder}/.vivaenv/bin/python",
+            "args": ["auto", "--humidity", "40.5"]
         },
         {
-            "name": "Debug Manual Control (Mister OFF)",
-            "type": "debugpy",
+            "name": "Python: Debug Mister Controller (Manual ON/OFF)",
+            "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/manual_control/src/control_device.py",
-            "args": ["--device", "mister", "--action", "off"],
-            "cwd": "${workspaceFolder}",
+            "program": "${workspaceFolder}/terrarium/src/controllers/mister_controller.py",
             "console": "integratedTerminal",
+            "sudo": true,
             "justMyCode": true,
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
+            "python": "${workspaceFolder}/.vivaenv/bin/python",
+            "args": ["on"]
         },
         {
-            "name": "Debug Manual Control (Mister Run for 5s)",
-            "type": "debugpy",
+            "name": "Python: Debug Humidifier (Auto)",
+            "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/manual_control/src/control_device.py",
-            "args": ["--device", "mister", "--action", "run_for", "--duration", "5"],
-            "cwd": "${workspaceFolder}",
+            "program": "${workspaceFolder}/terrarium/src/controllers/humidifier_controller.py",
             "console": "integratedTerminal",
+            "sudo": true,
             "justMyCode": true,
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
+            "python": "${workspaceFolder}/.vivaenv/bin/python",
+            "args": ["auto"]
         },
         {
-            "name": "Debug Manual Control (Mister Status)",
-            "type": "debugpy",
+            "name": "Python: Debug Humidifier (Manual ON)",
+            "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/manual_control/src/control_device.py",
-            "args": ["--device", "mister", "--action", "status"],
-            "cwd": "${workspaceFolder}",
+            "program": "${workspaceFolder}/terrarium/src/controllers/humidifier_controller.py",
             "console": "integratedTerminal",
+            "sudo": true,
             "justMyCode": true,
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
+            "python": "${workspaceFolder}/.vivaenv/bin/python",
+            "args": ["on"]
         },
         {
-            "name": "Debug db_setup.py (Local)",
-            "type": "debugpy",
+            "name": "Python: Debug Humidifier (Manual OFF)",
+            "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/db_setup.py",
+            "program": "${workspaceFolder}/terrarium/src/controllers/humidifier_controller.py",
             "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "args": [],
+            "sudo": true,
             "justMyCode": true,
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
-        },
-        {
-            "name": "Debug db_setup.py (Remote)",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/db_setup.py",
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "args": ["--isremote"],
-            "justMyCode": true,
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
-        },
-        {
-            "name": "Debug db_setup.py (Supabase)",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/db_setup.py",
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "args": ["--issupabase"],
-            "justMyCode": true,
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
-        },
-        {
-            "name": "Debug db_setup.py (Supabase) 2",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/db_setup_v2.py",
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "args": ["--issupabase"],
-            "justMyCode": true,
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
-        },
-        {
-            "name": "Orchestrator: PostgreSQL Local Setup Only",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/deploy/src/orchestrator.py",
-            "args": ["--postgres", "--local"],
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
-        },
-        {
-            "name": "Orchestrator: PostgreSQL Remote Setup Only",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/deploy/src/orchestrator.py",
-            "args": ["--postgres", "--remote"],
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
-        },
-        {
-            "name": "Orchestrator: Supabase Setup Only",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/deploy/src/orchestrator.py",
-            "args": ["--supabase"],
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
-        },
-        {
-            "name": "Orchestrator: Other DB Setup Only (e.g., Oracle)",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/deploy/src/orchestrator.py",
-            "args": ["--other", "oracle", "--local"],
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
-        },
-        {
-            "name": "Orchestrator: Load JSON Data Only (Skip Setup)",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/deploy/src/orchestrator.py",
-            "args": ["--load-json-data", "weather/rawfiles", "--skip"],
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
-        },
-        {
-            "name": "Orchestrator: Load DB Dump Only (Skip Setup)",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/deploy/src/orchestrator.py",
-            "args": ["--load-db-dump", "deploy/src/database/postgres_sensors_devices_data.sql", "--skip"],
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
-        },
-        {
-            "name": "Orchestrator: Postgres Local Setup & Load JSON Data",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/deploy/src/orchestrator.py",
-            "args": ["--postgres", "--local", "--load-json-data", "weather/rawfiles"],
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
-        },
-        {
-            "name": "Orchestrator: Postgres Local Setup & Load DB Dump",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/deploy/src/orchestrator.py",
-            "args": ["--postgres", "--local", "--load-db-dump", "/home/calcasmy/vivarium/deploy/src/database/postgres_sensors_devices_data.sql"],
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
-        },
-        {
-            "name": "Orchestrator: Supabase Setup & Load JSON Data",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/deploy/src/orchestrator.py",
-            "args": ["--supabase", "--load-json-data"],
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
-        },
-        {
-            "name": "Orchestrator: Supabase Setup & Load DB Dump",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/deploy/src/orchestrator.py",
-            "args": ["--supabase", "--load-db-dump", "deploy/src/database/postgres_sensors_devices_data.sql"],
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
-        },
-        {
-            "name": "Deploy: PostgreSQL Local Setup Only",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/deploy/src/deploy_orchestrator.py",
-            "args": ["--postgres", "--local"],
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
-        },
-        {
-            "name": "Deploy: PostgreSQL Remote Setup Only",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/deploy/src/deploy_orchestrator.py",
-            "args": ["--postgres", "--remote"],
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
-        },
-        
-        
-        // -- POSTGRES SETUP AND DATA LOADING
-        // -- Postgres setup and full data load
-        {
-            "name": "Deploy: Postgres Local Setup & Load All Data",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/deploy/src/deploy_orchestrator.py",
-            "args": [
-                "-P",
-                "-l",
-                "--load-db-dump", "resources/postgres_sensors_devices_data.sql",
-                "--load-json-data", "resources/raw_api_climatefiles"
-            ],
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
-        },
-
-        // -- postgres pgdump data loading only
-        {
-            "name": "Deploy: Load DB Dump Only (Skip Setup)",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/deploy/src/deploy_orchestrator.py",
-            "args": [
-                "-P", 
-                "-l", 
-                "--load-db-dump", "resources/postgres_sensors_devices_data.sql", 
-                "--skip"
-            ],
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
-        },
-        // -- postgres json data loading only
-        {
-            "name": "Deploy: Load JSON Data Only (Skip Setup)",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/deploy/src/deploy_orchestrator.py",
-            "args": [
-                "-P", 
-                "-l", 
-                "--load-json-data", "resources/raw_api_climatefiles", 
-                "--skip"
-            ],
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
-        },
-        // -- postgres setup and JSON data loading only
-        {
-            "name": "Deploy: Postgres Local Setup & Load JSON Data",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/deploy/src/deploy_orchestrator.py",
-            "args": [
-                "-P",
-                "-l",
-                "--load-json-data", "resources/raw_api_climatefiles"
-            ],
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
-        },
-        // -- SUPABASE SETUP AND DATA LOADING
-        // -- supabase setup and full data load
-        {
-            "name": "Deploy: Supabase Setup & Load All Data",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/deploy/src/deploy_orchestrator.py",
-            "args": [
-                "-S",
-                "-l",
-                "--load-db-dump", "resources/postgres_sensors_devices_data.sql",
-                "--load-json-data", "resources/raw_api_climatefiles"
-            ],
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
-        },
-        // -- supabase setup only
-        {
-            "name": "Deploy: Supabase Setup Only",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/deploy/src/deploy_orchestrator.py",
-            "args": ["-S"],
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
-        },
-        // -- supabase pgdump data loading only
-        {
-            "name": "Deploy: Supabase Load DB Dump (Skip setup)",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/deploy/src/deploy_orchestrator.py",
-            "args": [
-                "-S",
-                "-l",
-                "--load-db-dump", "resources/postgres_sensors_devices_data.sql", 
-                "--skip"
-            ],
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}"
-            }
+            "python": "${workspaceFolder}/.vivaenv/bin/python",
+            "args": ["off"]
         }
     ]
 }

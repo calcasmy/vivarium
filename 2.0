@@ -1,0 +1,2 @@
+Looking in indexes: https://pypi.org/simple, https://www.piwheels.org/simple
+Requirement already satisfied: gpiod in ./.vivaenv/lib/python3.11/site-packages (2.3.0)

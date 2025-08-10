@@ -6,7 +6,7 @@ from typing import Optional, Dict, Any, Union
 
 from utilities.src.logger import LogHelper
 from utilities.src.db_operations import DBOperations
-from strategies.src.base_query import BaseQuery
+from database.climate_data_ops.base_query_strategy import BaseQuery
 
 logger = LogHelper.get_logger(__name__)
 
@@ -204,3 +204,18 @@ class AstroQueries(BaseQuery):
         except Exception as e:
             logger.error(f"Unexpected error retrieving sunrise/sunset for location ID {location_id}, date '{forecast_date}': {e}", exc_info=True)
             return None
+    
+    def get_latest_sunrise_sunset(self, location_id: int) -> Dict | None:
+        """
+        Fetches the latest available sunrise/sunset data from the table.
+        """
+        query = """
+            SELECT sunrise, sunset 
+            FROM climate_astro_data 
+            WHERE location_id = %s
+            ORDER BY date DESC 
+            LIMIT 1;
+        """
+        params = (location_id,)
+        result = self.db_operations.execute_query(query, params, fetch_one=True)
+        return result

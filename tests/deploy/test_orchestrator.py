@@ -185,12 +185,12 @@ class TestDeployOrchestrator(unittest.TestCase):
         
         # Create a mock data loader instance
         mock_data_loader = MockDataLoaderStrategy.return_value
-        mock_data_loader.execute_full_data_load.return_value = True
+        mock_data_loader.execute_data_load.return_value = True
 
         success = orchestrator.run_data_loading(data_loader_strategy=mock_data_loader)
 
         self.assertTrue(success)
-        mock_data_loader.execute_full_data_load.assert_called_once()
+        mock_data_loader.execute_data_load.assert_called_once()
         self.mock_logger.info.assert_any_call(
             f"DeployOrchestrator: Delegating data loading to the {type(mock_data_loader).__name__} strategy."
         )
@@ -200,12 +200,12 @@ class TestDeployOrchestrator(unittest.TestCase):
         """Test failed execution of data loading."""
         orchestrator = DeployOrchestrator(database_type='postgres')
         mock_data_loader = MockDataLoaderStrategy.return_value
-        mock_data_loader.execute_full_data_load.return_value = False
+        mock_data_loader.execute_data_load.return_value = False
 
         success = orchestrator.run_data_loading(data_loader_strategy=mock_data_loader)
 
         self.assertFalse(success)
-        mock_data_loader.execute_full_data_load.assert_called_once()
+        mock_data_loader.execute_data_load.assert_called_once()
         self.mock_logger.error.assert_any_call("An unexpected error occurred during data loading delegation: False") # Error message with simple False as exception
 
     @patch('deploy.src.orchestrator.DataLoaderStrategy')
@@ -213,12 +213,12 @@ class TestDeployOrchestrator(unittest.TestCase):
         """Test run_data_loading handles exceptions from data loader strategy."""
         orchestrator = DeployOrchestrator(database_type='postgres')
         mock_data_loader = MockDataLoaderStrategy.return_value
-        mock_data_loader.execute_full_data_load.side_effect = RuntimeError("Data load error")
+        mock_data_loader.execute_data_load.side_effect = RuntimeError("Data load error")
 
         success = orchestrator.run_data_loading(data_loader_strategy=mock_data_loader)
 
         self.assertFalse(success)
-        mock_data_loader.execute_full_data_load.assert_called_once()
+        mock_data_loader.execute_data_load.assert_called_once()
         self.mock_logger.error.assert_called_once() # Check that an error was logged
         self.assertIn("An unexpected error occurred during data loading delegation:", self.mock_logger.error.call_args[0][0])
 

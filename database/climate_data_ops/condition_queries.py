@@ -6,7 +6,7 @@ from typing import Optional, Dict, Any, List, Union
 
 from utilities.src.logger import LogHelper
 from utilities.src.db_operations import DBOperations
-from strategies.src.base_query import BaseQuery
+from database.climate_data_ops.base_query_strategy import BaseQuery
 
 logger = LogHelper.get_logger(__name__)
 
@@ -27,43 +27,54 @@ class ConditionQueries(BaseQuery):
 
     def insert(self, condition_data: Dict[str, Any]) -> Optional[int]:
         """
-        Inserts a new condition record into 'public.climate_condition'.
+        Inserts a new weather condition into the 'public.climate_condition' table if it does not
+        already exist (based on 'code').
 
-        If a condition with the same 'condition_code' already exists, the operation
-        does nothing (due to ON CONFLICT DO NOTHING clause).
-
-        Implements the abstract 'insert' method from BaseQuery.
-
-        :param condition_data: Dictionary containing condition data.
-                               Expected keys: 'code' (int), 'text' (str), 'icon' (str).
-        :return: The 'condition_code' of the inserted row if successful, None if no row
-                 was inserted (e.g., due to conflict) or on error.
+        :param condition_data: A dictionary containing condition details, expected to have
+                               'code' (int), 'text' (str), and 'icon' (str).
+        :type condition_data: Dict[str, Any]
+        :returns: The unique identifier (code) of the inserted or existing condition,
+                  or ``None`` if an error occurs.
+        :rtype: Optional[int]
         """
-        query = sql.SQL("""
-            INSERT INTO public.climate_condition (
-                condition_code, text, icon
-            ) VALUES (%s, %s, %s)
-            ON CONFLICT (condition_code) DO NOTHING
+        code = condition_data.get('code')
+        text = condition_data.get('text')
+        icon = condition_data.get('icon')
+
+        if code is None:
+            logger.error("Attempted to insert condition without a 'code'.")
+            return None
+
+        # Check if condition already exists
+        existing_code = self.get(code)
+        if existing_code is not None:
+            logger.info(f"Condition with code {code} already exists.")
+            return existing_code
+
+        query = """
+            INSERT INTO public.climate_condition (condition_code, text, icon)
+            VALUES (%s, %s, %s)
+            ON CONFLICT (condition_code) DO UPDATE SET
+                text = EXCLUDED.text,
+                icon = EXCLUDED.icon
             RETURNING condition_code;
-        """)
-        params = (
-            condition_data.get('code'),
-            condition_data.get('text'),
-            condition_data.get('icon'),
-        )
+        """
+        params = (code, text, icon)
 
         try:
-            result = self.db_ops.execute_query(query, params, fetch_one=True)
-            if result and 'condition_code' in result:
-                logger.info(f"Condition code {result['condition_code']} successfully inserted.")
-                return result['condition_code']
-            logger.info(f"Condition code {condition_data.get('code')} already exists or no row was returned.")
-            return None
-        except psycopg2.Error as e:
-            logger.error(f"Database error during insert for condition code {condition_data.get('code')}: {e}", exc_info=True)
-            return None
+            # ON CONFLICT DO UPDATE RETURNING code ensures we get the code even if updated
+            inserted_code = self.db_ops.execute_query_with_returning_id(query, params)
+            if inserted_code is not None:
+                logger.info(f"Condition code {inserted_code} inserted/updated.")
+                return inserted_code
+            else:
+                logger.error(f"Failed to insert or update condition with code {code}. No code returned.")
+                return None
+        except psycopg2.errors.UniqueViolation:
+            logger.info(f"Condition with code {code} already exists (caught unique violation after initial check).")
+            return code # Assume it exists and return the code
         except Exception as e:
-            logger.error(f"Unexpected error during insert for condition code {condition_data.get('code')}: {e}", exc_info=True)
+            logger.error(f"Error inserting/updating condition with code {code}: {e}", exc_info=True)
             return None
 
     def get(self, condition_code: int) -> Optional[Dict[str, Any]]:
