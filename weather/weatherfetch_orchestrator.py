@@ -18,7 +18,7 @@ from utilities.src.config import FileConfig, WeatherAPIConfig, DatabaseConfig, S
 from utilities.src.enums.global_enums import ErrorCodes
 from utilities.src.enums.database_enums import DatabaseType, ConnectionType
 
-from weather.src.atmosphere.weather_data_retriever import WeatherDataRetriever
+from weather.src.weather_data_retriever import WeatherDataRetriever
 from database.data_loader_ops.json_data_loader import JSONDataLoader
 
 logger = LogHelper.get_logger(__name__)

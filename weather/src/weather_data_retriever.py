@@ -11,7 +11,7 @@ if str(vivarium_root_path) not in sys.path:
 
 from utilities.src.logger import LogHelper
 from utilities.src.config import FileConfig, WeatherAPIConfig
-from weather.src.atmosphere.weather_api_client import WeatherAPIClient
+from weather.src.weather_api_client import WeatherAPIClient
 
 logger = LogHelper.get_logger(__name__)
 
@@ -116,7 +116,6 @@ class WeatherDataRetriever:
                 logger.info(f"Successfully fetched raw weather data for {date} from API.")
                 # Immediately save the fetched data to a local file
                 saved_file_path = self._save_raw_data_to_local_file(date, weather_data_dict)
-                # saved_file_path = None
                 return saved_file_path
             else:
                 logger.warning(f"No weather data returned from API for {date}.")

@@ -38,7 +38,7 @@ class MisterController(BaseDeviceController):
         super().__init__(self.device_id, self.relay_pin, self.consumer_name, db_operations)
         logger.info("MisterController initialized.")
 
-        self.mister_duration = mister_config.mister_duration
+        self.mister_duration = mister_config.duration
         self.mister_interval = mister_config.mister_interval
         self.humidity_threshold = mister_config.humidity_threshold
 

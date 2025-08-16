@@ -21,13 +21,13 @@ if __name__ == "__main__":
 from utilities.src.logger import LogHelper
 from utilities.src.db_operations import DBOperations, ConnectionDetails
 
-from weather.src.database.location_queries import LocationQueries
-from weather.src.database.raw_data_queries import RawDataQueries
-from weather.src.database.forecast_queries import ForecastQueries
-from weather.src.database.day_queries import DayQueries
-from weather.src.database.astro_queries import AstroQueries
-from weather.src.database.condition_queries import ConditionQueries
-from weather.src.database.hour_queries import HourQueries
+from weather.src.database_del.location_queries_del import LocationQueries
+from weather.src.database_del.raw_data_queries_del import RawDataQueries
+from weather.src.database_del.forecast_queries_del import ForecastQueries
+from weather.src.database_del.day_queries_del import DayQueries
+from weather.src.database_del.astro_queries_del import AstroQueries
+from weather.src.database_del.condition_queries_del import ConditionQueries
+from weather.src.database_del.hour_queries_del import HourQueries
 
 logger = LogHelper.get_logger(__name__)
 

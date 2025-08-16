@@ -2,7 +2,7 @@
 
 from typing import Dict, List, Optional
 from utilities.src.database_operations import DatabaseOperations
-from weather.src.database.condition_queries import ConditionQueries
+from weather.src.database_del.condition_queries_del import ConditionQueries
 
 class HourQueries(DatabaseOperations):
     def __init__(self, db_operations):

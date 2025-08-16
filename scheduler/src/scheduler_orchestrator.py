@@ -25,7 +25,7 @@ from utilities.src.config import SchedulerConfig
 #: A dictionary mapping logical scheduler names to their corresponding script filenames.
 SCHEDULER_SCRIPTS = {
     "weather_fetcher": "scheduler/src/weather_scheduler.py",
-    "vivarium_controller": "scheduler/src/vivarium_scheduler.py",
+    "vivarium_manager": "scheduler/src/vivarium_scheduler.py",
 }
 
 #: A list to track active subprocess objects.
@@ -61,7 +61,7 @@ def main() -> None:
         start_scheduler_process(SCHEDULER_SCRIPTS["weather_fetcher"])
     
     if config.enable_climate_control:
-        start_scheduler_process(SCHEDULER_SCRIPTS["vivarium_controller"])
+        start_scheduler_process(SCHEDULER_SCRIPTS["vivarium_manager"])
     
     print("\nOrchestrator running. Press Ctrl+C to stop all schedulers.")
     try:

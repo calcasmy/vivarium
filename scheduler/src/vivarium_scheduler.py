@@ -21,10 +21,16 @@ from utilities.src.logger import LogHelper
 from utilities.src.db_operations import DBOperations, ConnectionDetails
 from utilities.src.config import SchedulerConfig, TimeConfig, DatabaseConfig
 from terrarium.src.sensors.terrarium_sensor_reader import TerrariumSensorReader
+
+# Device Controllers
 from terrarium.src.controllers.light_controller import LightController
-from terrarium.src.controllers.mister_controller import MisterControllerV2
+from terrarium.src.controllers.mister_controller import MisterController
+from terrarium.src.controllers.humidifier_controller import HumidifierController
+
+# Schedulers for specific devices
 from scheduler.src.light_scheduler import LightScheduler
 from scheduler.src.mister_scheduler import MisterScheduler
+from scheduler.src.humidifier_scheduler import HumidifierScheduler
 
 logger = LogHelper.get_logger(__name__)
 
@@ -61,8 +67,8 @@ class VivariumScheduler:
         logger.info("Database connection established for VivariumScheduler.")
 
         self.light_controller: LightController = LightController(db_operations=self.db_operations)
-        self.mister_controller: MisterControllerV2 = MisterControllerV2(db_operations=self.db_operations)
-        # self.humidifier_controller: HumidiferController = HumidiferController(db_operations=self.db_operations) # Uncomment when ready
+        self.mister_controller: MisterController = MisterController(db_operations=self.db_operations)
+        self.humidifier_controller: HumidifierController = HumidifierController(db_operations=self.db_operations)
         logger.info("Device controllers initialized.")
 
         self.terrarium_sensor_reader: TerrariumSensorReader = TerrariumSensorReader(db_operations=self.db_operations)
@@ -78,6 +84,11 @@ class VivariumScheduler:
             scheduler=self.scheduler,
             db_operations=self.db_operations,
             mister_controller=self.mister_controller
+        )
+        self.humidifier_scheduler = HumidifierScheduler(
+            scheduler=self.scheduler,
+            db_operations=self.db_operations,
+            humidifier_controller=self.humidifier_controller
         )
         logger.info("VivariumScheduler and sub-schedulers initialized.")
 
@@ -113,7 +124,8 @@ class VivariumScheduler:
             logger.info(f"Job '{event.job_id}' completed successfully.")
             if event.job_id == 'read_sensor_data':
                 logger.info(f"Job '{event.job_id}' finished. Triggering environmental checks for mister.")
-                self.mister_scheduler.check_and_run_mister()
+                # self.mister_scheduler.check_and_run_mister()
+                self.humidifier_scheduler.check_and_run_humidifier()
 
     def _update_lights_job(self) -> None:
         """
@@ -139,8 +151,9 @@ class VivariumScheduler:
         try:
             logger.info("Checking Light System...")
             self.light_controller.control_light(action="off")
+            self.light_controller._update_status(False)
             logger.info("Light system: Ensured initial state is OFF.")
-            self.light_scheduler.schedule_daily_lights()
+            # self.light_scheduler.schedule_daily_lights()
             logger.info("Light system: Daily schedule set up and immediate state adjusted based on current time.")
         except Exception as e:
             logger.error(f"Error during Light System boot check: {e}", exc_info=True)
@@ -149,13 +162,25 @@ class VivariumScheduler:
         try:
             logger.info("Checking Mister System...")
             self.mister_controller.control_mister(action="off")
+            self.mister_controller._update_status(False)
             logger.info("Mister system: Initial state set to OFF.")
-            self.mister_scheduler.check_and_run_mister()
+            # self.mister_scheduler.check_and_run_mister()
             logger.info("Mister system: Current state adjusted based on environmental conditions.")
         except Exception as e:
             logger.error(f"Error during Mister System boot check: {e}", exc_info=True)
 
-        # --- Sensor System Check ---
+        # --- Humidifier System Check ---
+        try:
+            logger.info("Checking Humidifier System...")
+            self.humidifier_controller.control_humidifier(action="off")
+            self.humidifier_controller._update_status(False)
+            logger.info("Humidifier system: Initial state set to OFF.")
+            # self.humidifier_scheduler.check_and_run_humidifier()
+            logger.info("Humidifier system: Current state adjusted based on environmental conditions.")
+        except Exception as e:
+            logger.error(f"Error during Humidifier System boot check: {e}", exc_info=True)
+
+        # # --- Sensor System Check ---
         try:
             logger.info("Checking Sensor Systems...")
             self.terrarium_sensor_reader.read_and_store_data()
@@ -200,35 +225,47 @@ class VivariumScheduler:
         """
         logger.info("Scheduling core Vivarium jobs.")
 
-        # 1. At 4:00 AM everyday, fetch last record to adjust lights
-        # self.scheduler.add_job(
-        #     self._update_lights_job,
-        #     'cron',
-        #     hour = self.scheduler_config.schedule_light_hour,
-        #     minute = self.scheduler_config.schedule_light_minute,
-        #     id='update_lights_daily'
-        # )
-        # logger.info(f"Scheduled light schedule update to run daily at {self.scheduler_config.schedule_light_hour:02d}:{self.scheduler_config.schedule_light_minute:02d}.")
-
-        # 1a. For testing, run light update more frequently
+        # 1. -- At 4:00 AM everyday, fetch last record to adjust and schedule lights --
         self.scheduler.add_job(
             self._update_lights_job,
-            'interval',
-            seconds=30, # For testing, run more frequently
-            id='update_lights_daily_fast'
+            'cron',
+            hour = self.scheduler_config.schedule_light_hour,
+            minute = self.scheduler_config.schedule_light_minute,
+            id='update_lights_daily'
         )
-        logger.info("Scheduled light schedule update to run every 30 seconds (TESTING).")
+        logger.info(f"Scheduled light schedule update to run daily at {self.scheduler_config.schedule_light_hour:02d}:{self.scheduler_config.schedule_light_minute:02d}.")
 
-        # 2. Read sensor status every 5 min, turn on mister if needed
+        # 1a. For testing, run light update more frequently
         # self.scheduler.add_job(
-        #     self.terrarium_sensor_reader.read_and_store_data,
+        #     self._update_lights_job,
         #     'interval',
-        #     minutes = self.scheduler_config.scheule_sensor_read,
-        #     id='read_sensor_data'
+        #     seconds=30, # For testing, run more frequently
+        #     id='update_lights_daily_fast'
         # )
-        # logger.info(f"Scheduled Terrarium sensor reading to run every {self.scheduler_config.scheule_sensor_read} minutes.")
+        # logger.info("Scheduled light schedule update to run every 30 seconds (TESTING).")
 
-        # 2a. For testing, run sensor reading more frequently
+        # 1.b For testing, run light update immediately
+        # logger.info("TESTING: Scheduling immediate light update job.")
+        # self.scheduler.add_job(
+        #     self._update_lights_job,
+        #     'date',
+        #     run_date=datetime.now(), # Set the run date to the current time for immediate execution
+        #     id='update_lights_immediate'
+        # )
+
+        # 2. -- Scheduler Mister --
+        self.mister_scheduler.schedule_misting_job()
+
+        # 3. Read sensor status every 5 min, turn on mister if needed
+        self.scheduler.add_job(
+            self.terrarium_sensor_reader.read_and_store_data,
+            'interval',
+            minutes = self.scheduler_config.scheule_sensor_read,
+            id='read_sensor_data'
+        )
+        logger.info(f"Scheduled Terrarium sensor reading to run every {self.scheduler_config.scheule_sensor_read} minutes.")
+
+        # 3a. For testing, run sensor reading more frequently
         # self.scheduler.add_job(
         #     self.terrarium_sensor_reader.read_and_store_data,
         #     'interval',
@@ -236,6 +273,15 @@ class VivariumScheduler:
         #     id='read_sensor_data_fast'
         # )
         # logger.info(f"Scheduled Terrarium sensor reading to run every 30 seconds (TESTING).")
+
+        # 3b. For testing, run sensor reading immediately
+        # logger.info("TESTING: Scheduling immediate sensor reading job.")
+        # self.scheduler.add_job(
+        #     self.terrarium_sensor_reader.read_and_store_data,
+        #     'date',
+        #     run_date=datetime.now(), # Set the run date to the current time for immediate execution
+        #     id='read_sensor_data'
+        # )
 
     def run(self) -> None:
         """
@@ -251,8 +297,15 @@ class VivariumScheduler:
         except Exception as e:
             logger.critical(f"Vivarium Scheduler encountered a critical error and will stop: {e}", exc_info=True)
         finally:
+            if hasattr(self, 'light_controller') and self.light_controller:
+                self.light_controller.close()
+            if hasattr(self, 'mister_controller') and self.mister_controller:
+                self.mister_controller.close()
+            if hasattr(self, 'humidifier_controller') and self.humidifier_controller:
+                self.humidifier_controller.close()
+
             # Ensure DB connection is closed even if an unexpected error occurs or on shutdown
-            if self.db_operations:
+            if hasattr(self, 'db_operations') and self.db_operations and not self.db_operations.conn.closed:
                 self.db_operations.close()
                 logger.info("Database connection closed.")
             logger.info("Vivarium Scheduler stopped.")

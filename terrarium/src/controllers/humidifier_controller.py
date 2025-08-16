@@ -43,7 +43,7 @@ class HumidifierController(BaseDeviceController):
         self.username = humid_config.username
         self.password = humid_config.password
         self.consumer_name = 'humidifier_control'
-        self.target_humidity = humid_config.target_humidity
+        # self.target_humidity = humid_config.target_humidity
         # self.humidity_sensor_id = humid_config.humidity_sensor_id
         # self.hysteresis = humid_config.hysteresis
         
@@ -130,6 +130,7 @@ class HumidifierController(BaseDeviceController):
             logger.info(f"Current device humidity reading: {self.humidifier.humidity}%")
         elif action == 'on':
             self.humidifier.turn_on()
+            self.humidifier.set_mist_level(level=humid_config.mistlevel_medium)
             logger.info("Humidifier turned ON via manual command.")
         elif action == 'off':
             self.humidifier.turn_off()
@@ -142,53 +143,64 @@ class HumidifierController(BaseDeviceController):
             self.humidifier.update()
             self._update_status(self.humidifier.is_on)
 
-    def control_humidifier_auto(self):
+    def is_on(self) -> bool:
         """
-        Controls the humidifier automatically based on the latest humidity sensor reading.
+        Checks if the humidifier is currently on.
 
-        This method fetches the latest humidity data from the database and
-        toggles the humidifier on or off to maintain the target humidity.
+        :returns: True if the humidifier is on, False otherwise.
+        :rtype: bool
         """
-        if not self.humidifier:
-            logger.error("Humidifier device not initialized. Cannot run auto mode.")
-            return
+        if self.humidifier:
+            return self.humidifier.is_on
+        return False
 
-        latest_humidity_data = self.db_operations.get_latest_sensor_reading(
-            self.humidity_sensor_id
-        )
+    # def control_humidifier_auto(self):
+    #     """
+    #     Controls the humidifier automatically based on the latest humidity sensor reading.
 
-        if not latest_humidity_data or 'value' not in latest_humidity_data:
-            logger.warning("Could not retrieve latest humidity data from database. Skipping auto control.")
-            return
+    #     This method fetches the latest humidity data from the database and
+    #     toggles the humidifier on or off to maintain the target humidity.
+    #     """
+    #     if not self.humidifier:
+    #         logger.error("Humidifier device not initialized. Cannot run auto mode.")
+    #         return
+
+    #     latest_humidity_data = self.db_operations.get_latest_sensor_reading(
+    #         self.humidity_sensor_id
+    #     )
+
+    #     if not latest_humidity_data or 'value' not in latest_humidity_data:
+    #         logger.warning("Could not retrieve latest humidity data from database. Skipping auto control.")
+    #         return
         
-        current_humidity = latest_humidity_data['value']
+    #     current_humidity = latest_humidity_data['value']
         
-        # Update device status from VeSync before checking
-        self.humidifier.update()
-        current_humidifier_status = self.humidifier.is_on
+    #     # Update device status from VeSync before checking
+    #     self.humidifier.update()
+    #     current_humidifier_status = self.humidifier.is_on
 
-        logger.info(f"Current Terrarium Humidity: {current_humidity}%. Humidifier is currently {'ON' if current_humidifier_status else 'OFF'}.")
+    #     logger.info(f"Current Terrarium Humidity: {current_humidity}%. Humidifier is currently {'ON' if current_humidifier_status else 'OFF'}.")
         
-        # Logic to decide action
-        if current_humidity < self.target_humidity:
-            if not current_humidifier_status:
-                logger.info(f"Humidity {current_humidity}% is below target {self.target_humidity}%. Turning humidifier ON.")
-                self.humidifier.turn_on()
-            else:
-                logger.info("Humidifier is already ON and humidity is below target. No action needed.")
+    #     # Logic to decide action
+    #     if current_humidity < self.target_humidity:
+    #         if not current_humidifier_status:
+    #             logger.info(f"Humidity {current_humidity}% is below target {self.target_humidity}%. Turning humidifier ON.")
+    #             self.humidifier.turn_on()
+    #         else:
+    #             logger.info("Humidifier is already ON and humidity is below target. No action needed.")
 
-        elif current_humidity > (self.target_humidity + self.hysteresis):
-            if current_humidifier_status:
-                logger.info(f"Humidity {current_humidity}% is above target {self.target_humidity}%. Turning humidifier OFF.")
-                self.humidifier.turn_off()
-            else:
-                logger.info("Humidifier is already OFF and humidity is above target. No action needed.")
-        else:
-            logger.info(f"Humidity {current_humidity}% is within acceptable range. No action needed.")
+    #     elif current_humidity > (self.target_humidity + self.hysteresis):
+    #         if current_humidifier_status:
+    #             logger.info(f"Humidity {current_humidity}% is above target {self.target_humidity}%. Turning humidifier OFF.")
+    #             self.humidifier.turn_off()
+    #         else:
+    #             logger.info("Humidifier is already OFF and humidity is above target. No action needed.")
+    #     else:
+    #         logger.info(f"Humidity {current_humidity}% is within acceptable range. No action needed.")
 
-        # Update the database status after the action
-        self.humidifier.update()
-        self._update_status(self.humidifier.is_on)
+    #     # Update the database status after the action
+    #     self.humidifier.update()
+    #     self._update_status(self.humidifier.is_on)
 
 def main(action: str):
     """
@@ -212,12 +224,12 @@ def main(action: str):
     try:
         humid_controller = HumidifierController(db_operations=db_operations)
         
-        if action == 'auto':
-            humid_controller.control_humidifier_auto()
-        elif action in ['on', 'off', 'status']:
+        # if action == 'auto':
+        #     humid_controller.control_humidifier_auto()
+        if action in ['on', 'off', 'status']:
             humid_controller.control_humidifier(action)
         else:
-            logger.warning(f"Invalid humidifier action: {action}. Use 'auto', 'on', 'off', or 'status'.")
+            logger.warning(f"Invalid humidifier action: {action}. Use 'on', 'off', or 'status'.")
 
     except Exception as e:
         logger.exception(f"An unexpected error occurred in HumidifierController main: {e}")
@@ -228,7 +240,7 @@ def main(action: str):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Control the vivarium humidifier.")
-    parser.add_argument("action", type=str, help="Action to perform: 'on', 'off', 'auto', or 'status'.")
+    parser.add_argument("action", type=str, help="Action to perform: 'on', 'off' or 'status'.")
     args = parser.parse_args()
 
     main(args.action)

@@ -55,6 +55,12 @@ class WeatherAPIClient:
             response = requests.get(self.base_url, params=params)
             response.raise_for_status()
             return response.json()
+        except requests.exceptions.HTTPError as http_err:
+            logger.error(f"HTTP error occurred while fetching weather data for {date_str} at {params.get('q')}: {http_err}")
+            return None
+        except requests.exceptions.ConnectionError as conn_err:
+            logger.error(f"Connection error occurred while fetching weather data for {date_str} at {params.get('q')}: {conn_err}")
+            return None
         except requests.exceptions.RequestException as e:
             logger.error(f"Error fetching weather data for {date_str} at {params.get('q')}: {e}")
             return None

@@ -1,4 +1,4 @@
-# src/utilities/database_operations.py
+# src/utilities/db_operations.py
 
 import psycopg2
 from psycopg2 import sql
@@ -70,6 +70,9 @@ class DBOperations:
         :returns: None
         :rtype: None
         """
+        if self.conn and not self.conn.closed:
+            self.close()
+
         self._connection_details = connection_details
         if self.conn and not self.conn.closed:
             logger.info("Already connected to the database.")

@@ -444,7 +444,9 @@ class MisterConfig(Config):
         mister_section = 'mister'
         self.mister_control_pin     = self.get(mister_section, 'controlpin', default = 21, target_type = int)
         self.humidity_threshold     = self.get(mister_section, 'hu_threshold', default = 80, target_type = int)
-        self.mister_duration        = self.get(mister_section, 'duration', default = 30, target_type = int)
+        self.at_hour                = self.get(mister_section, 'at_hour', default = 7, target_type = int)
+        self.at_minute              = self.get(mister_section, 'at_minute', default = 0, target_type = int)
+        self.duration        = self.get(mister_section, 'duration', default = 30, target_type = int)
         self.mister_interval        = self.get(mister_section, 'interval', default = 360, target_type = int)
         self.device_id              = self.get(mister_section, 'device_id', default = 2, target_type = int)
 
@@ -477,11 +479,12 @@ class HumidifierConfig(Config):
         self.password               = self.get(humidifier_section, 'password', default = 'password', target_type = str, is_secret=True)
         self.mode                   = self.get(humidifier_section, 'mode', default = 'manual', target_type = str)
         self.device_id              = self.get(humidifier_section, 'device_id', default = 3, target_type = int)
-        self.runtime                = self.get(humidifier_section, 'runtime', default = 30, target_type = int)
+        self.runtime                = self.get(humidifier_section, 'runtime_min', default = 30, target_type = int)
         self.mistlevel_low          = self.get(humidifier_section, 'mistlevel_low', default = 1, target_type = int)
-        self.mislevel_medium        = self.get(humidifier_section, 'mislevel_medium', default = 5, target_type = int)
+        self.mistlevel_medium        = self.get(humidifier_section, 'mislevel_medium', default = 5, target_type = int)
         self.mistlevel_high         = self.get(humidifier_section, 'mistlevel_high', default = 9, target_type = int)
         self.target_humidity        = self.get(humidifier_section, 'target_humidity', default = 90, target_type = int) 
+        self.hysteresis             = self.get(humidifier_section, 'hysteresis', default = 5.0, target_type = float)
         
 
 class SensorConfig(Config):

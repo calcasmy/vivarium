@@ -24,8 +24,8 @@ if vivarium_root_path not in sys.path:
     sys.path.insert(0, vivarium_root_path)
 
 # --- Project-Specific Imports ---
-from weather.src.atmosphere.weather_api_client import WeatherAPIClient
-from weather.src.database.raw_data_queries import RawDataQueries
+from weather.src.weather_api_client import WeatherAPIClient
+from weather.src.database_del.raw_data_queries_del import RawDataQueries
 # from weather.src.database.json_processor import JSONProcessor
 
 # --- Utility Imports ---

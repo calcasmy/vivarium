@@ -83,50 +83,59 @@ class LightScheduler(DeviceSchedulerBase):
         Updates the daily light schedule based on fetched astro data or configured defaults.
         This method should be called periodically (e.g., once a day after weather fetch).
         """
-        logger.info("Updating terrarium lights schedule.")
+
+        # -- TESTING: Schedule a job to turn on lights immediately and then off after 30 seconds
+        # 1. Turn on the lights immediately
+        logger.info("TESTING: Turning lights ON immediately.")
+        self.light_controller.control_light(action='on')
+
+        # 2. Schedule the lights to turn off after 30 seconds
+        off_time = datetime.now() + timedelta(seconds=30)
+        self.scheduler.add_job(
+            self.light_controller.control_light,
+            'date',
+            run_date=off_time,
+            args=['off'],
+            id='lights_off_test_job',
+            name='Test Lights OFF Job'
+        )
+        logger.info(f"TESTING: Scheduled lights to turn OFF at {off_time.strftime('%Y-%m-%d %H:%M:%S')}")
+
+        # logger.info("Updating terrarium lights schedule.")
         
-        sun_schedule = self._fetch_sunrise_sunset()
+        # sun_schedule = self._fetch_sunrise_sunset()
 
-        sunrise_time_to_schedule = sun_schedule['sunrise_time_to_schedule']
-        sunset_time_to_schedule = sun_schedule['sunset_time_to_schedule']
-        
-        # Now, schedule the jobs using the determined times
-        if sunrise_time_to_schedule and sunset_time_to_schedule:
-            # Schedule light ON at sunrise
-            self._schedule_cron_job(
-                self.light_controller.control_light, # Call the controller method
-                hour=sunrise_time_to_schedule.hour,
-                minute=sunrise_time_to_schedule.minute,
-                second=sunrise_time_to_schedule.second,
-                args=['on'],
-                job_id='lights_on_daily'
-            )
+        # sunrise_time_to_schedule = sun_schedule['sunrise_time_to_schedule']
+        # sunset_time_to_schedule = sun_schedule['sunset_time_to_schedule']
 
-            # Schedule light OFF at sunset
-            self._schedule_cron_job(
-                self.light_controller.control_light, # Call the controller method
-                hour=sunset_time_to_schedule.hour,
-                minute=sunset_time_to_schedule.minute,
-                second=sunset_time_to_schedule.second,
-                args=['off'],
-                job_id='lights_off_daily'
-            )
-        else:
-            logger.critical("Failed to determine valid sunrise/sunset times. Light schedule not set.")
+        # # -- ACTUAL SCHEDULING LOGIC
+        # if sunrise_time_to_schedule and sunset_time_to_schedule:
+        #     # 1. IMMEDIATE STATE CHECK: Turn on or off the light based on the current time.
+        #     current_time = datetime.now().time()
+        #     if sunrise_time_to_schedule <= current_time <= sunset_time_to_schedule:
+        #         logger.info("Current time is within the scheduled ON period. Turning lights ON.")
+        #         self.light_controller.control_light(action='on')
+        #     else:
+        #         logger.info("Current time is outside the scheduled ON period. Ensuring lights are OFF.")
+        #         self.light_controller.control_light(action='off')
 
-        if sunrise_time_to_schedule and sunset_time_to_schedule:
-            logger.info(f"Determined daily light schedule: ON {sunrise_time_to_schedule.strftime('%H:%M:%S')}, OFF {sunset_time_to_schedule.strftime('%H:%M:%S')}")
-
-            # 1. Update the LightController's internal schedule times
-            self.light_controller.update_schedule_time(sunrise_time_to_schedule, sunset_time_to_schedule)
-            
-            # 2. Immediately check and set the light state based on the *new* schedule
-            # This calls control_light with action=None, prompting it to use its schedule logic
-            logger.info(f"Triggering immediate light state check based on updated schedule.")
-            self.light_controller.control_light(action=None)
-
-            logger.info("Daily light ON/OFF cron jobs scheduled/updated.")
-        else:
-            logger.critical("Failed to determine valid sunrise/sunset times. Light schedule not set for today.")
-
-
+        #     # 2. SCHEDULE CRON JOBS: Now schedule the jobs for future events.
+        #     self._schedule_cron_job(
+        #         self.light_controller.control_light,
+        #         hour=sunrise_time_to_schedule.hour,
+        #         minute=sunrise_time_to_schedule.minute,
+        #         second=sunrise_time_to_schedule.second,
+        #         args=['on'],
+        #         job_id='lights_on_daily'
+        #     )
+        #     self._schedule_cron_job(
+        #         self.light_controller.control_light,
+        #         hour=sunset_time_to_schedule.hour,
+        #         minute=sunset_time_to_schedule.minute,
+        #         second=sunset_time_to_schedule.second,
+        #         args=['off'],
+        #         job_id='lights_off_daily'
+        #     )
+        #     logger.info(f"Daily light schedule set: ON at {sunrise_time_to_schedule.strftime('%H:%M:%S')}, OFF at {sunset_time_to_schedule.strftime('%H:%M:%S')}")
+        # else:
+        #     logger.critical("Failed to determine valid sunrise/sunset times. Light schedule not set.")

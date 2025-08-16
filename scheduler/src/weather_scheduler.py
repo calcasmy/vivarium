@@ -185,7 +185,7 @@ class WeatherScheduler:
         except Exception as e:
             logger.critical(f"Climate Scheduler encountered a critical error: {e}", exc_info=True)
         finally:
-            if self.db_operations and self.db_operations.is_connected():
+            if self.db_operations and self.db_operations.conn.closed:
                 self.db_operations.close()
                 logger.info("Database connection closed gracefully.")
 

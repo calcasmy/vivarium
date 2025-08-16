@@ -20,8 +20,8 @@ from utilities.src.logger import LogHelper
 from utilities.src.db_operations import DBOperations
 from utilities.src.config import TimeConfig
 
-from terrarium.src.database.sensor_queries import SensorQueries
-from terrarium.src.database.sensor_data_queries import SensorDataQueries
+from database.sensor_data_ops.sensor_data_queries import SensorDataQueries
+from database.sensor_data_ops.sensor_queries import SensorQueries
 
 logger = LogHelper.get_logger(__name__)
 

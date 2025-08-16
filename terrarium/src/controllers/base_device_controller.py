@@ -14,8 +14,8 @@ if vivarium_path not in sys.path:
 
 from utilities.src.logger import LogHelper
 from utilities.src.db_operations import DBOperations
-from terrarium.src.database.device_status_queries import DeviceStatusQueries
-from terrarium.src.database.device_queries import DeviceQueries
+from database.device_data_ops.device_status_queries import DeviceStatusQueries
+from database.device_data_ops.device_queries import DeviceQueries
 
 logger = LogHelper.get_logger(__name__)
 
@@ -48,16 +48,22 @@ class BaseDeviceController:
         self._devicequeries = DeviceQueries(db_operations=self.db_ops)
         self._devicestatus = DeviceStatusQueries(db_operations=self.db_ops)
 
+    def close(self):
+        """Ensures the GPIO line is explicitly released."""
+        if self.line_request:
+            try:
+                self.line_request.release()
+                self.line_request = None  # Ensure the object is cleaned up
+                logger.info(f"GPIO line {self.relay_pin} ({self.consumer_name}) released.")
+            except Exception as e:
+                logger.error(f"Error releasing GPIO line {self.relay_pin} for {self.consumer_name}: {e}")
+
     def __del__(self):
         """
         Ensures the GPIO line is released when the object is destroyed.
         """
         if self.line_request:
-            try:
-                self.line_request.release()
-                logger.info(f"GPIO line {self.relay_pin} ({self.consumer_name}) released.")
-            except Exception as e:
-                logger.error(f"Error releasing GPIO line {self.relay_pin} for {self.consumer_name}: {e}")
+            self.close()
 
     def _setup_gpio(self):
         """
@@ -115,6 +121,7 @@ class BaseDeviceController:
             self.db_ops.commit_transaction()
             logger.info(f"Status for {self.device_id} ({self.consumer_name}) updated.")
         except Exception as e:
+            self.db_ops.rollback_transaction()
             error_message = f"Failed to update status for {self.device_id} ({self.consumer_name}): {e}"
             logger.error(error_message)
             raise
