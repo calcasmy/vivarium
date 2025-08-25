@@ -2,6 +2,7 @@
 
 import os
 import sys
+import argparse
 from datetime import time
 
 # Get the absolute path to the 'vivarium' directory
@@ -11,7 +12,7 @@ if vivarium_path not in sys.path:
 
 from utilities.src.logger import LogHelper
 from utilities.src.config import LightConfig, DatabaseConfig
-from utilities.src.db_operations import DBOperations
+from utilities.src.db_operations import DBOperations, ConnectionDetails
 from terrarium.src.controllers.base_device_controller import BaseDeviceController
 from gpiod.line import Value
 
@@ -96,3 +97,36 @@ class LightController(BaseDeviceController):
 
         except Exception as e:
             logger.exception(f"An unexpected error occurred while controlling the light: {e}")
+
+def main():
+    """
+    Parses command-line arguments and controls the light manually.
+    """
+
+    parser = argparse.ArgumentParser(description="Manually control the vivarium light.")
+    parser.add_argument("action", choices=["on", "off"], help="The desired action: 'on' or 'off'.")
+    args = parser.parse_args()
+
+    try:
+        db_config = DatabaseConfig()
+        db_operations: DBOperations = DBOperations()
+        db_connectiondetails = ConnectionDetails(
+                host= db_config.postgres_remote_connection.host,
+                port= db_config.postgres_remote_connection.port,
+                user= db_config.postgres_remote_connection.user,
+                password= db_config.postgres_remote_connection.password,
+                dbname= db_config.postgres_remote_connection.dbname,
+                sslmode=None
+        )
+        db_operations.connect(db_connectiondetails)
+        light_controller = LightController(db_operations)
+        
+        logger.info(f"Manual control activated: Turning light {args.action}.")
+        light_controller.control_light(action=args.action)
+        logger.info(f"Manual control for light completed.")
+
+    except Exception as e:
+        logger.error(f"Failed to perform manual light control: {e}")
+
+if __name__ == "__main__":
+    main()

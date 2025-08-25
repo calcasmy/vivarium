@@ -152,22 +152,22 @@ class WeatherScheduler:
         :rtype: None
         """
         logger.info("Scheduling climate jobs.")
-        # self.scheduler.add_job(
-        #     self._fetch_and_store_weather_data_job,
-        #     'cron',
-        #     hour=WEATHER_FETCH_HOUR,
-        #     minute=WEATHER_FETCH_MINUTE,
-        #     id='fetch_weather_daily'
-        # )
-        # logger.info(f"Scheduled weather data fetch to run daily at {WEATHER_FETCH_HOUR:02d}:{WEATHER_FETCH_MINUTE:02d}.")
-
         self.scheduler.add_job(
             self._fetch_and_store_weather_data_job,
-            'date',
-            run_date=datetime.now(), # Set the run date to the current time for immediate execution
-            id='fetch_weather_daily_immediate'
+            'cron',
+            hour=WEATHER_FETCH_HOUR,
+            minute=WEATHER_FETCH_MINUTE,
+            id='fetch_weather_daily'
         )
-        logger.info(f"Scheduled Weather fetch scheduler to run immediately (TESTING).")
+        logger.info(f"Scheduled weather data fetch to run daily at {WEATHER_FETCH_HOUR:02d}:{WEATHER_FETCH_MINUTE:02d}.")
+
+        # self.scheduler.add_job(
+        #     self._fetch_and_store_weather_data_job,
+        #     'date',
+        #     run_date=datetime.now(), # Set the run date to the current time for immediate execution
+        #     id='fetch_weather_daily_immediate'
+        # )
+        # logger.info(f"Scheduled Weather fetch scheduler to run immediately (TESTING).")
 
     def run(self) -> None:
         """

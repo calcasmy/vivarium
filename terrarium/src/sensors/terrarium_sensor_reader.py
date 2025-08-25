@@ -107,7 +107,7 @@ class TerrariumSensorReader:
             process.terminate()
             process.join() # Ensure the process has truly terminated
             logger.error(f"Sensor data retrieval timed out after {self.process_timeout} seconds. Process terminated.")
-            return # Exit the function, do not attempt to read from queue
+            return False # Exit the function, do not attempt to read from queue
 
         if not queue.empty():
             # Get the result from the queue
@@ -116,7 +116,7 @@ class TerrariumSensorReader:
             if "error" in sensor_data:
                 # An error occurred in the subprocess, log it and return
                 logger.error(f"Sensor subprocess reported an error: {sensor_data['error']}\n{sensor_data.get('traceback', 'No traceback provided.')}")
-                return
+                return False
 
             # Proceed with storing data if no error
             timestamp = datetime.now().isoformat()
@@ -133,6 +133,8 @@ class TerrariumSensorReader:
                 f"Humidity: {sensor_data['humidity_percentage']:.2f}%"
             )
             logger.info(log_message)
+            return True
         else:
             # This case means process finished, but didn't put anything in queue
             logger.error("Sensor subprocess finished but did not return any data (queue was empty).")
+            return False

@@ -120,12 +120,21 @@ class VivariumScheduler:
         if event.exception:
             logger.error(f"Job '{event.job_id}' raised an exception: {event.exception.__class__.__name__}: {event.exception}")
             logger.error(f"Traceback for job '{event.job_id}':\n{traceback.format_exc()}")
+
+            if event.job_id == 'read_sensor_data':
+                logger.warning("Sensor reading job failed. Skipping humidifier checks to prevent false triggers.")
+
         else:
-            logger.info(f"Job '{event.job_id}' completed successfully.")
+            # Check the result of the job execution
+            result = event.retval
+            logger.info(f"Job '{event.job_id}' completed successfully with result: {result}.")
+        
             if event.job_id == 'read_sensor_data':
                 logger.info(f"Job '{event.job_id}' finished. Triggering environmental checks for mister.")
                 # self.mister_scheduler.check_and_run_mister()
                 self.humidifier_scheduler.check_and_run_humidifier()
+            elif event.job_id == 'read_sensor_data' and not result:
+                logger.warning("Sensor reading job completed but reported a failure. Humidifier checks skipped.")
 
     def _update_lights_job(self) -> None:
         """
