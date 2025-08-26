@@ -102,5 +102,25 @@
             "python": "${workspaceFolder}/.vivaenv/bin/python",
             "args": ["off"]
         }
+        {
+            "name": "Debug Light On",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/terrarium/src/controllers/light_controller.py",
+            "console": "integratedTerminal",
+            "args": ["on"],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "stop vivarium service"
+        },
+        {
+            "name": "Debug Light Off",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/terrarium/src/controllers/light_controller.py",
+            "console": "integratedTerminal",
+            "args": ["off"],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "stop vivarium service"
+        }
     ]
 }

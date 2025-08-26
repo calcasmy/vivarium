@@ -1,0 +1,8 @@
+apscheduler
+psycopg2-binary
+adafruit-htu21d
+adafruit-blinka
+rpi.gpio
+smbus2
+requests
+paho-mqtt

@@ -401,6 +401,9 @@ class ExhaustConfig(Config):
         self.max_speed              = self.get(fan_section, 'max', default = 100, target_type = int)
         self.pwm_controlpin         = self.get(fan_section, 'pwm_controlpin', default = 12, target_type = int)
         self.rpm_controlpin         = self.get(fan_section, 'rpm_controlpin', default = 12, target_type = int)
+        self.device_id              = self.get(fan_section, 'device_id', default = 4, target_type = int)
+        self.enabled               = self.get(fan_section, 'enabled', default = True, target_type = bool)
+        self.consumer_name         = 'exhaust_fan_control'
 
 class TempConfig(Config):
     """
@@ -538,3 +541,13 @@ class SchedulerConfig(Config):
         self.schedule_light_hour    = self.get(scheduler_section, 'schedule_light_hour', default=4, target_type=int)
         self.schedule_light_minute  = self.get(scheduler_section, 'schedule_light_minute', default=0, target_type=int)
         self.scheule_sensor_read    = self.get(scheduler_section, 'schedule_sensor_read', default=5, target_type=int)
+
+class VentilationExhaustConfig(Config):
+    """Configuration class for the exhaust fan."""
+    def __init__(self):
+        super().__init__()
+        exhaust_section = 'exhaust'
+        self.device_id              = self.get('device_id')
+        self.device_type            = self.get('device_type')
+        self.gpio_pin               = self.get('gpio_pin')
+        self.enabled                = self.get('enabled')
