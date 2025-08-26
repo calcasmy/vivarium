@@ -401,9 +401,30 @@ class ExhaustConfig(Config):
         self.max_speed              = self.get(fan_section, 'max', default = 100, target_type = int)
         self.pwm_controlpin         = self.get(fan_section, 'pwm_controlpin', default = 12, target_type = int)
         self.rpm_controlpin         = self.get(fan_section, 'rpm_controlpin', default = 12, target_type = int)
-        self.device_id              = self.get(fan_section, 'device_id', default = 4, target_type = int)
-        self.enabled               = self.get(fan_section, 'enabled', default = True, target_type = bool)
-        self.consumer_name         = 'exhaust_fan_control'
+        self.device_id              = self.get(fan_section, 'device_id', default = 5, target_type = int)
+        self.enabled                = self.get(fan_section, 'enabled', default = True, target_type = bool)
+        self.device_type            = self.get(fan_section, 'device_type', default = 'exhaustfan', target_type = str)
+
+class IntakeConfig(Config):
+    """
+    A subclass for intake settings
+    """
+    def __init__(self):
+        """
+        Initializes the IntakeConfig, loading intake settings.
+        """
+        super().__init__()
+        intake_section = 'intake'
+        self.off_speed              = self.get(intake_section, 'off', default = 0, target_type = int)
+        self.low_speed              = self.get(intake_section, 'low', default = 30, target_type = int)
+        self.medium_speed           = self.get(intake_section, 'med', default = 60, target_type = int)
+        self.high_speed             = self.get(intake_section, 'high', default = 85, target_type = int)
+        self.max_speed              = self.get(intake_section, 'max', default = 100, target_type = int)
+        self.pwm_controlpin         = self.get(intake_section, 'pwm_controlpin', default = 16, target_type = int)
+        self.rpm_controlpin         = self.get(intake_section, 'rpm_controlpin', default = 16, target_type = int)
+        self.device_id              = self.get(intake_section, 'device_id', default = 6, target_type = int)
+        self.enabled                = self.get(intake_section, 'enabled', default = True, target_type = bool)
+        self.device_type            = self.get(intake_section, 'device_type', default = 'intakefan', target_type = str)
 
 class TempConfig(Config):
     """
