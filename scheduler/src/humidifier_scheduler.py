@@ -49,7 +49,7 @@ class HumidifierScheduler(DeviceSchedulerBase):
         
         self.target_humidity = humid_config.target_humidity
         self.hysteresis = humid_config.hysteresis
-        self.humidity_sensor_id = sensor_config.HTU21D
+        self.humidity_sensor_id = sensor_config.THsensorID
 
         self._humidifier_off_time = None
         

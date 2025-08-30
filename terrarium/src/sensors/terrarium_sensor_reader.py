@@ -1,4 +1,4 @@
-# /Users/neptune/Development/vivarium/terrarium/src/sensors/terrarium_sensor_reader.py
+# vivarium/terrarium/src/sensors/terrarium_sensor_reader.py
 
 import os
 import sys
@@ -7,7 +7,6 @@ import board
 import traceback
 import multiprocessing
 
-from adafruit_htu21d import HTU21D
 from datetime import datetime
 from typing import Optional, Dict
 
@@ -18,57 +17,67 @@ if vivarium_path not in sys.path:
 
 from utilities.src.logger import LogHelper
 from utilities.src.db_operations import DBOperations
-from utilities.src.config import TimeConfig
+from utilities.src.config import TimeConfig, SensorConfig
 
 from database.sensor_data_ops.sensor_data_queries import SensorDataQueries
-from database.sensor_data_ops.sensor_queries import SensorQueries
 
 logger = LogHelper.get_logger(__name__)
 
-# Constants specific to this module
 TEMPERATURE_UNIT = "\u00B0F"
 
 class TerrariumSensorReader:
     """
-    A class to read temperature and humidity data from an HTU21D sensor
-    using a separate process to handle potential sensor read timeouts.
-    It stores the data in the database.
+    A class to read temperature and humidity data from a sensor.
+    
+    This class handles sensor data retrieval in a separate process to prevent
+    the main application from freezing due to I/O timeouts. It then persists
+    the data to the database.
     """
     def __init__(self, db_operations: DBOperations):
         """
-        Initializes the sensor reader, database operations, and retrieves timeout setting.
-
-        Args:
-            db_operations (DatabaseOperations): An instance of DatabaseOperations for DB interaction.
+        Initializes the sensor reader and its database dependencies.
+        
+        :param db_operations: An instance of DBOperations for database interaction.
+        :type db_operations: DBOperations
         """
         self.db_ops = db_operations
-        self.sensor_queries = SensorQueries(db_operations=self.db_ops)
         self.sensor_data_queries = SensorDataQueries(db_operations=self.db_ops)
-        
-        # Get process timeout from config
         self.process_timeout = float(TimeConfig().process_term_span)
-        self.sensor_name = 'Adafruit HTU21D-F'
-
+        self.th_sensor_id = int(SensorConfig().THsensorID)
+        
         logger.info(f"TerrariumSensorReader initialized with a process timeout of {self.process_timeout} seconds.")
 
     @staticmethod
-    def _fetch_htu21d_data_process(queue: multiprocessing.Queue):
+    def _fetch_sensor_data_process(queue: multiprocessing.Queue, sensor_id: Optional[int] = 1) -> None:
         """
-        Helper function to run in a separate process for fetching HTU21D sensor data.
-        Initializes the sensor within this process.
+        Helper function to fetche sensor data within a separate process.
+        
+        This static method is the target for the multiprocessing process. It
+        initializes the I2C sensor to avoid pickling issues.
+        
+        :param queue: The multiprocessing queue to send data back to the parent process.
+        :type queue: multiprocessing.Queue
+        :param sensor_id: The ID of the sensor to read from.
+        :type sensor_id: Optional[int]
         """
         try:
-            # Initialize I2C and sensor within the subprocess
-            # This is crucial because I2C objects are generally not pickleable.
             i2c_bus = board.I2C()
-            sensor_device = HTU21D(i2c_bus)
+
+            if sensor_id == 1:
+                from adafruit_htu21d import HTU21D
+                sensor_device = HTU21D(i2c_bus)
+            elif sensor_id == 2:
+                from adafruit_sht4x import SHT4x, Mode
+                sensor_device = SHT4x(i2c_bus)
+                sensor_device.mode = Mode.NOHEAT_HIGHPRECISION
+            else:
+                raise ValueError(f"Unsupported sensor ID: {sensor_id}")
 
             temp_c = sensor_device.temperature
             humidity_p = sensor_device.relative_humidity
 
             if temp_c is None or humidity_p is None:
-                # Raise an error if sensor returns None, indicating a bad read
-                raise ValueError("HTU21D sensor returned None values (bad read).")
+                raise ValueError("Sensor returned None values (bad read).")
 
             temp_f = (temp_c * 9 / 5) + 32
 
@@ -77,56 +86,49 @@ class TerrariumSensorReader:
                 'temperature_celsius': round(temp_c, 2),
                 'humidity_percentage': round(humidity_p, 2)
             }
-            queue.put(sensor_data) # Put data into the queue for the parent process
+            queue.put(sensor_data)
             logger.debug("Sensor data successfully fetched in subprocess.")
 
         except Exception as e:
-            # Log the error within the subprocess for detailed debugging
-            logger.error(f"Error in sensor subprocess (_fetch_htu21d_data_process): {e}", exc_info=True)
-            # Put an error indicator into the queue so the parent knows something went wrong
+            logger.error(f"Error in sensor subprocess: {e}", exc_info=True)
             queue.put({"error": str(e), "traceback": traceback.format_exc()})
 
-
-    def read_and_store_data(self):
+    def read_and_store_data(self) -> bool:
         """
-        Initiates a subprocess to read sensor data, handles timeouts,
-        and stores the data in the database.
+        Reads and stores temperature and humidity data.
+        
+        This method initiates a subprocess to read the sensor. It handles process
+        timeouts and persists the collected data to the database.
+        
+        :returns: True if data was successfully read and stored, False otherwise.
+        :rtype: bool
         """
-        queue = multiprocessing.Queue() # Create a Queue for inter-process communication
+        queue = multiprocessing.Queue()
         process = multiprocessing.Process(
-            target=TerrariumSensorReader._fetch_htu21d_data_process,
-            args=(queue,)
+            target=TerrariumSensorReader._fetch_sensor_data_process,
+            args=(queue, self.th_sensor_id)
         )
         
         logger.info("Starting sensor data retrieval subprocess.")
         process.start()
-        process.join(timeout=self.process_timeout) # Wait for process with a timeout
+        process.join(timeout=self.process_timeout)
 
         if process.is_alive():
-            # If the process is still alive after the timeout, terminate it
             process.terminate()
-            process.join() # Ensure the process has truly terminated
+            process.join()
             logger.error(f"Sensor data retrieval timed out after {self.process_timeout} seconds. Process terminated.")
-            return False # Exit the function, do not attempt to read from queue
+            return False
 
         if not queue.empty():
-            # Get the result from the queue
             sensor_data = queue.get()
 
             if "error" in sensor_data:
-                # An error occurred in the subprocess, log it and return
                 logger.error(f"Sensor subprocess reported an error: {sensor_data['error']}\n{sensor_data.get('traceback', 'No traceback provided.')}")
                 return False
 
-            # Proceed with storing data if no error
             timestamp = datetime.now().isoformat()
-            
-            # Fetch sensor ID by name (re-using db_ops connection from parent process)
-            sensor_details = self.sensor_queries.get_sensor_by_name(self.sensor_name)
-            sensor_id = sensor_details.get("sensor_id", 1) # Default to 1 if not found
-
             raw_data = json.dumps(sensor_data)
-            self.sensor_data_queries.insert_sensor_reading(sensor_id, timestamp, raw_data)
+            self.sensor_data_queries.insert_sensor_reading(self.th_sensor_id, timestamp, raw_data)
 
             log_message = (
                 f"Processed and persisted sensor data: Temperature: {sensor_data['temperature_fahrenheit']:.2f}{TEMPERATURE_UNIT}, "
@@ -135,6 +137,5 @@ class TerrariumSensorReader:
             logger.info(log_message)
             return True
         else:
-            # This case means process finished, but didn't put anything in queue
             logger.error("Sensor subprocess finished but did not return any data (queue was empty).")
             return False

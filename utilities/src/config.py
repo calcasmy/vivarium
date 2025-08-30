@@ -521,7 +521,7 @@ class SensorConfig(Config):
         """
         super().__init__()
         sensor_section = 'sensor'
-        self.HTU21D = self.get(sensor_section, 'HTU21D-F', default = 1, target_type = int)
+        self.THsensorID = self.get(sensor_section, 'thsensorid', default = 1, target_type = int)
 
 
 class MQTTConfig(Config):
