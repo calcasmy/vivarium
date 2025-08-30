@@ -400,7 +400,7 @@ class ExhaustConfig(Config):
         self.high_speed             = self.get(fan_section, 'high', default = 85, target_type = int)
         self.max_speed              = self.get(fan_section, 'max', default = 100, target_type = int)
         self.pwm_controlpin         = self.get(fan_section, 'pwm_controlpin', default = 12, target_type = int)
-        self.rpm_controlpin         = self.get(fan_section, 'rpm_controlpin', default = 12, target_type = int)
+        self.rpm_controlpin         = self.get(fan_section, 'rpm_controlpin', default = 16, target_type = int)
         self.device_id              = self.get(fan_section, 'device_id', default = 5, target_type = int)
         self.enabled                = self.get(fan_section, 'enabled', default = True, target_type = bool)
         self.device_type            = self.get(fan_section, 'device_type', default = 'exhaustfan', target_type = str)
@@ -420,8 +420,8 @@ class IntakeConfig(Config):
         self.medium_speed           = self.get(intake_section, 'med', default = 60, target_type = int)
         self.high_speed             = self.get(intake_section, 'high', default = 85, target_type = int)
         self.max_speed              = self.get(intake_section, 'max', default = 100, target_type = int)
-        self.pwm_controlpin         = self.get(intake_section, 'pwm_controlpin', default = 16, target_type = int)
-        self.rpm_controlpin         = self.get(intake_section, 'rpm_controlpin', default = 16, target_type = int)
+        self.pwm_controlpin         = self.get(intake_section, 'pwm_controlpin', default = 13, target_type = int)
+        self.rpm_controlpin         = self.get(intake_section, 'rpm_controlpin', default = 6, target_type = int)
         self.device_id              = self.get(intake_section, 'device_id', default = 6, target_type = int)
         self.enabled                = self.get(intake_section, 'enabled', default = True, target_type = bool)
         self.device_type            = self.get(intake_section, 'device_type', default = 'intakefan', target_type = str)
@@ -562,13 +562,3 @@ class SchedulerConfig(Config):
         self.schedule_light_hour    = self.get(scheduler_section, 'schedule_light_hour', default=4, target_type=int)
         self.schedule_light_minute  = self.get(scheduler_section, 'schedule_light_minute', default=0, target_type=int)
         self.scheule_sensor_read    = self.get(scheduler_section, 'schedule_sensor_read', default=5, target_type=int)
-
-class VentilationExhaustConfig(Config):
-    """Configuration class for the exhaust fan."""
-    def __init__(self):
-        super().__init__()
-        exhaust_section = 'exhaust'
-        self.device_id              = self.get('device_id')
-        self.device_type            = self.get('device_type')
-        self.gpio_pin               = self.get('gpio_pin')
-        self.enabled                = self.get('enabled')

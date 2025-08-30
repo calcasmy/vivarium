@@ -1,4 +1,4 @@
-# vivarium/terrarium/src/controllers/light_controller.py (adjust path)
+# vivarium/terrarium/src/controllers/light_controller.py
 
 import os
 import sys

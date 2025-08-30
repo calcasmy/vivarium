@@ -1,3 +1,5 @@
+# vivarium/terrarium/src/controllers/intake_controller.py
+
 import os
 import sys
 from typing import Optional
@@ -8,7 +10,7 @@ if vivarium_path not in sys.path:
     sys.path.insert(0, vivarium_path)
 
 # Importing utilities package
-from utilities.src.config import ExhaustFanConfig
+from utilities.src.config import IntakeConfig
 from utilities.src.logger import LogHelper
 from utilities.src.db_operations import DBOperations
 
@@ -17,9 +19,9 @@ from terrarium.src.controllers.base_device_controller import BaseDeviceControlle
 
 # Initialize logger and configuration
 logger = LogHelper.get_logger(__name__)
-exhaust_fan_config = ExhaustFanConfig()
+exhaust_fan_config = IntakeConfig()
 
-class VentilationController(BaseDeviceController):
+class IntakeController(BaseDeviceController):
     """
     Controls a single exhaust fan via a GPIO pin.
 
