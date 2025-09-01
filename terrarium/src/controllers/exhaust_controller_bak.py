@@ -3,59 +3,55 @@
 import os
 import sys
 import time
-import argparse
 import signal
-import RPi.GPIO as GPIO # Import the new library
-from datetime import time as dttime
-from typing import Optional
-from gpiozero import PWMOutputDevice
+from typing import Any
+from gpiozero import PWMOutputDevice, DigitalInputDevice
 
-# Get the absolute path to the 'vivarium' directory
+# Path Configuration
 vivarium_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 if vivarium_path not in sys.path:
     sys.path.insert(0, vivarium_path)
 
-# Importing utilities package
+# Project Imports
 from utilities.src.logger import LogHelper
 from utilities.src.config import ExhaustConfig
-from utilities.src.db_operations import DBOperations
 
 logger = LogHelper.get_logger(__name__)
 
-# Global Constants
+# Constants
 PULSES_PER_REVOLUTION = 2
-RPM_UPDATE_INTERVAL = 5
+RPM_UPDATE_INTERVAL = 1
 
 class ExhaustController:
     """
-    A class to control a 4-pin PC fan via PWM and read its RPM.
+    Controls a 4-pin PC fan via PWM and reads its RPM using gpiozero.
+    Designed for a Raspberry Pi 5.
     """
-    def __init__(self, pwm_pin: int = 12, tach_pin: int = 16):
-        self.pwm_pin = pwm_pin
-        self.tach_pin = tach_pin
+    def __init__(self):
+        self.exhaust_config = ExhaustConfig()
+        self.fan_pwm = PWMOutputDevice(pin = self.exhaust_config.pwm_controlpin, frequency=self.exhaust_config.frequency, initial_value=0)
+        # self.fan_pwm = PWMOutputDevice(pwm_pin, frequency=250, initial_value=0)
         
-        self.fan_pwm = PWMOutputDevice(self.pwm_pin, frequency=250, initial_value=0)
+        # Using bounce_time to filter some noise
+        self.fan_tach = DigitalInputDevice(pin = self.exhaust_config.rpm_controlpin, pull_up=True)
         
         self.rpm = 0
         self.pulse_count = 0
         self.last_update_time = time.time()
         
-        # --- RPi.GPIO setup ---
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup(self.tach_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.add_event_detect(self.tach_pin, GPIO.FALLING, callback=self._pulse_counter, bouncetime=10)
+        self.fan_tach.when_deactivated = self._pulse_counter
         
-        # Set up a timer to periodically calculate RPM
+        # Timer for RPM calculation
         signal.signal(signal.SIGALRM, self._calculate_rpm)
         signal.setitimer(signal.ITIMER_REAL, RPM_UPDATE_INTERVAL, RPM_UPDATE_INTERVAL)
         
         logger.info("ExhaustController initialized.")
-        
-    def _pulse_counter(self, channel: int) -> None:
+
+    def _pulse_counter(self) -> None:
         """Increments the pulse counter on each tachometer signal."""
         self.pulse_count += 1
         
-    def _calculate_rpm(self, signum, frame) -> None:
+    def _calculate_rpm(self, signum: Any, frame: Any) -> None:
         """Calculates RPM based on the pulse count over the update interval."""
         current_time = time.time()
         time_elapsed = current_time - self.last_update_time
@@ -65,25 +61,32 @@ class ExhaustController:
         
         self.pulse_count = 0
         self.last_update_time = current_time
-
+        
     def set_speed(self, speed: float) -> None:
-        if not 0.0 <= speed <= 1.0:
+        """Sets the fan speed (0.0 to 1.0)."""
+        if not self.exhaust_config.off_speed <= speed <= self.exhaust_config.max_speed:
             raise ValueError("Speed must be a value between 0.0 and 1.0")
         self.fan_pwm.value = speed
         
     def get_rpm(self) -> float:
+        """Returns the last measured fan RPM."""
         return self.rpm
     
     def cleanup(self) -> None:
-        self.fan_pwm.off()
-        self.fan_pwm.close()
-        GPIO.cleanup(self.tach_pin)
-        
-# --- Usage Example ---
+        """
+        Cleans up GPIO resources and stops the fan.
+        Avoids the fan restart bug by setting value to 0 and not calling .close().
+        """
+        self.fan_pwm.value = 0
+        self.fan_tach.close()
+        logger.info("ExhaustController GPIO cleaned up.")
+
+# --- Main block for debugging and testing ---
 if __name__ == '__main__':
     controller = None
     try:
-        controller = ExhaustController()
+        controller = ExhaustController(pwm_pin=12, tach_pin=16)
+
         print("Starting fan at medium speed...")
         controller.set_speed(0.5)
         

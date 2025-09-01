@@ -384,6 +384,31 @@ class LogConfig(Config):
         self.max_bytes              = self.get(log_section, 'max_bytes', default = 5242880, target_type = int)
         self.backup_count           = self.get(log_section, 'backup_count', default = 5, target_type  = int)
 
+class AerationConfig(Config):
+    """
+    A subclass for aeration settings
+    """
+    def __init__(self):
+        """
+        Initializes the AerationConfig, loading aeration settings.
+        """
+        super().__init__()
+        aeration_section = 'aeration'
+        self.off_speed              = self.get(aeration_section, 'off_speed', default = 0.0, target_type = float)
+        self.low_speed              = self.get(aeration_section, 'low_speed', default = 0.25, target_type = float)
+        self.medium_speed           = self.get(aeration_section, 'med_speed', default = 0.5, target_type = float)
+        self.high_speed             = self.get(aeration_section, 'high_speed', default = 0.75, target_type = float)
+        self.max_speed              = self.get(aeration_section, 'max_speed', default = 1.0, target_type = float)
+        self.exhaust_pwm_pin        = self.get(aeration_section, 'exhaust_pwm_pin', default = 13, target_type = int)
+        self.exhaust_tach_pin       = self.get(aeration_section, 'exhaust_rpm_pin', default = 6, target_type = int)
+        self.intake_pwm_pin         = self.get(aeration_section, 'intake_pwm_pin', default = 12, target_type = int)
+        self.intake_tach_pin        = self.get(aeration_section, 'intake_rpm_pin', default = 16, target_type = int)
+        self.exhaust_device_id      = self.get(aeration_section, 'exhaust_device_id', default = 5, target_type = int)
+        self.intake_device_id       = self.get(aeration_section, 'intake_device_id', default = 6, target_type = int)
+        self.frequency              = self.get(aeration_section, 'frequency', default = 250, target_type = int)
+        self.pulses_per_revolution  = self.get(aeration_section, 'pulses_per_revolution', default = 2, target_type = int)
+        self.rpm_update_interval    = self.get(aeration_section, 'rpm_update_interval', default = 1, target_type = int)
+
 class ExhaustConfig(Config):
     """
     A subclass for fan settings
@@ -393,17 +418,18 @@ class ExhaustConfig(Config):
         Initializes the ExhaustConfig, loading fan settings.
         """
         super().__init__()
-        fan_section = 'exhaust'
-        self.off_speed              = self.get(fan_section, 'off', default = 0, target_type = int)
-        self.low_speed              = self.get(fan_section, 'low', default = 30, target_type = int)
-        self.medium_speed           = self.get(fan_section, 'med', default = 60, target_type = int)
-        self.high_speed             = self.get(fan_section, 'high', default = 85, target_type = int)
-        self.max_speed              = self.get(fan_section, 'max', default = 100, target_type = int)
-        self.pwm_controlpin         = self.get(fan_section, 'pwm_controlpin', default = 12, target_type = int)
-        self.rpm_controlpin         = self.get(fan_section, 'rpm_controlpin', default = 16, target_type = int)
-        self.device_id              = self.get(fan_section, 'device_id', default = 5, target_type = int)
-        self.enabled                = self.get(fan_section, 'enabled', default = True, target_type = bool)
-        self.device_type            = self.get(fan_section, 'device_type', default = 'exhaustfan', target_type = str)
+        exhaust_section = 'exhaust'
+        self.off_speed              = self.get(exhaust_section, 'off', default = 0.0, target_type = float)
+        self.low_speed              = self.get(exhaust_section, 'low', default = 0.25, target_type = float)
+        self.medium_speed           = self.get(exhaust_section, 'med', default = 0.5, target_type = float)
+        self.high_speed             = self.get(exhaust_section, 'high', default = 0.75, target_type = float)
+        self.max_speed              = self.get(exhaust_section, 'max', default = 1.0, target_type = float)
+        self.pwm_controlpin         = self.get(exhaust_section, 'pwm_controlpin', default = 12, target_type = int)
+        self.rpm_controlpin         = self.get(exhaust_section, 'rpm_controlpin', default = 16, target_type = int)
+        self.device_id              = self.get(exhaust_section, 'device_id', default = 5, target_type = int)
+        self.frequency              = self.get(exhaust_section, 'frequency', default = 250, target_type = int)
+        self.enabled                = self.get(exhaust_section, 'enabled', default = True, target_type = bool)
+        self.device_type            = self.get(exhaust_section, 'device_type', default = 'exhaustfan', target_type = str)
 
 class IntakeConfig(Config):
     """
@@ -415,13 +441,14 @@ class IntakeConfig(Config):
         """
         super().__init__()
         intake_section = 'intake'
-        self.off_speed              = self.get(intake_section, 'off', default = 0, target_type = int)
-        self.low_speed              = self.get(intake_section, 'low', default = 30, target_type = int)
-        self.medium_speed           = self.get(intake_section, 'med', default = 60, target_type = int)
-        self.high_speed             = self.get(intake_section, 'high', default = 85, target_type = int)
-        self.max_speed              = self.get(intake_section, 'max', default = 100, target_type = int)
+        self.off_speed              = self.get(intake_section, 'off', default = 0.0, target_type = float)
+        self.low_speed              = self.get(intake_section, 'low', default = 0.25, target_type = float)
+        self.medium_speed           = self.get(intake_section, 'med', default = 0.5, target_type = float)
+        self.high_speed             = self.get(intake_section, 'high', default = 0.75, target_type = float)
+        self.max_speed              = self.get(intake_section, 'max', default = 1.0, target_type = float)
         self.pwm_controlpin         = self.get(intake_section, 'pwm_controlpin', default = 13, target_type = int)
         self.rpm_controlpin         = self.get(intake_section, 'rpm_controlpin', default = 6, target_type = int)
+        self.frequency              = self.get(intake_section, 'frequency', default = 250, target_type = int)
         self.device_id              = self.get(intake_section, 'device_id', default = 6, target_type = int)
         self.enabled                = self.get(intake_section, 'enabled', default = True, target_type = bool)
         self.device_type            = self.get(intake_section, 'device_type', default = 'intakefan', target_type = str)
