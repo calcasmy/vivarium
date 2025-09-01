@@ -162,7 +162,7 @@ class VivariumScheduler:
             self.light_controller.control_light(action="off")
             self.light_controller._update_status(False)
             logger.info("Light system: Ensured initial state is OFF.")
-            # self.light_scheduler.schedule_daily_lights()
+            self.light_scheduler.schedule_daily_lights()
             logger.info("Light system: Daily schedule set up and immediate state adjusted based on current time.")
         except Exception as e:
             logger.error(f"Error during Light System boot check: {e}", exc_info=True)
