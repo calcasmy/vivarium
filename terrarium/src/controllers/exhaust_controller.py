@@ -16,7 +16,7 @@ if vivarium_path not in sys.path:
 
 # Importing utilities package
 from utilities.src.logger import LogHelper
-from utilities.src.config import ExhaustConfig, DatabaseConfig
+from utilities.src.config import coreConfig, ExhaustConfig, DatabaseConfig
 from utilities.src.db_operations import DBOperations, ConnectionDetails
 
 # Super class

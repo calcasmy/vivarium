@@ -17,7 +17,7 @@ if vivarium_path not in sys.path:
 
 from utilities.src.logger import LogHelper
 from utilities.src.db_operations import DBOperations
-from utilities.src.config import TimeConfig, SensorConfig
+from utilities.src.config import coreConfig, TimeConfig
 
 from database.sensor_data_ops.sensor_data_queries import SensorDataQueries
 
@@ -43,7 +43,7 @@ class TerrariumSensorReader:
         self.db_ops = db_operations
         self.sensor_data_queries = SensorDataQueries(db_operations=self.db_ops)
         self.process_timeout = float(TimeConfig().process_term_span)
-        self.th_sensor_id = int(SensorConfig().THsensorID)
+        self.th_sensor_id = int(coreConfig().thsensor_id)
         
         logger.info(f"TerrariumSensorReader initialized with a process timeout of {self.process_timeout} seconds.")
 
