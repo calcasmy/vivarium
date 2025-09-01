@@ -16,6 +16,7 @@ from utilities.src.logger import LogHelper
 from utilities.src.config import MisterConfig
 from utilities.src.db_operations import DBOperations
 from terrarium.src.controllers.mister_controller import MisterController
+from terrarium.src.controllers.aeration_controller import AerationController
 from scheduler.src.device_scheduler_base import DeviceSchedulerBase
 
 logger = LogHelper.get_logger(__name__)
@@ -25,7 +26,7 @@ class MisterScheduler(DeviceSchedulerBase):
     """
     Manages the scheduling and automatic control of the vivarium mister.
     """
-    def __init__(self, scheduler: BlockingScheduler, db_operations: DBOperations, mister_controller: MisterController):
+    def __init__(self, scheduler: BlockingScheduler, db_operations: DBOperations, mister_controller: MisterController, aeration_controller: AerationController):
         """
         Initializes the MisterScheduler.
 
@@ -65,6 +66,9 @@ class MisterScheduler(DeviceSchedulerBase):
             """
             # 1. -- ACTUAL - Schedule Mister --
             logger.info("Mister job activated. Turning ON.")
+            # Turn fans to max speed
+            self.aeration_controller.set_fans_to_max_speed()
+            # Turn on the mister
             self.mister_controller.control_mister(action='on')
             
             try:
@@ -75,6 +79,14 @@ class MisterScheduler(DeviceSchedulerBase):
                     id='mister_off',
                     name='Morning Mister OFF',
                     args=['off'],
+                    replace_existing=True
+                )
+                # After turning off the mister, set fans back to default speed
+                self.scheduler.add_job(
+                    self.aeration_controller.set_fans_to_default_speed,
+                    trigger=DateTrigger(run_date=off_time),
+                    id='aeration_default_speed_from_mister',
+                    name='Aeration Default Speed (Mister)',
                     replace_existing=True
                 )
                 logger.info(f"Mister scheduled to turn OFF at {off_time.strftime('%Y-%m-%d %H:%M:%S')}")

@@ -26,6 +26,7 @@ from terrarium.src.sensors.terrarium_sensor_reader import TerrariumSensorReader
 from terrarium.src.controllers.light_controller import LightController
 from terrarium.src.controllers.mister_controller import MisterController
 from terrarium.src.controllers.humidifier_controller import HumidifierController
+from terrarium.src.controllers.aeration_controller import AerationController
 
 # Schedulers for specific devices
 from scheduler.src.light_scheduler import LightScheduler
@@ -69,6 +70,8 @@ class VivariumScheduler:
         self.light_controller: LightController = LightController(db_operations=self.db_operations)
         self.mister_controller: MisterController = MisterController(db_operations=self.db_operations)
         self.humidifier_controller: HumidifierController = HumidifierController(db_operations=self.db_operations)
+        self.aeration_controller: AerationController = AerationController(db_operations=self.db_operations)
+
         logger.info("Device controllers initialized.")
 
         self.terrarium_sensor_reader: TerrariumSensorReader = TerrariumSensorReader(db_operations=self.db_operations)
@@ -83,12 +86,14 @@ class VivariumScheduler:
         self.mister_scheduler: MisterScheduler = MisterScheduler(
             scheduler=self.scheduler,
             db_operations=self.db_operations,
-            mister_controller=self.mister_controller
+            mister_controller=self.mister_controller,
+            aeration_controller=self.aeration_controller
         )
         self.humidifier_scheduler = HumidifierScheduler(
             scheduler=self.scheduler,
             db_operations=self.db_operations,
-            humidifier_controller=self.humidifier_controller
+            humidifier_controller=self.humidifier_controller,
+            aeration_controller=self.aeration_controller
         )
         logger.info("VivariumScheduler and sub-schedulers initialized.")
 
@@ -189,7 +194,16 @@ class VivariumScheduler:
         except Exception as e:
             logger.error(f"Error during Humidifier System boot check: {e}", exc_info=True)
 
-        # # --- Sensor System Check ---
+        # --- Aeration System Check ---
+        try:
+            logger.info("Checking Aeration System...")
+            self.aeration_controller.set_fans_to_default_speed()
+            logger.info("Aeration system: Initial fan speed set to default.")
+        except Exception as e:
+            logger.error(f"Error during Aeration System boot check: {e}", exc_info=True)
+
+
+        # --- Sensor System Check ---
         try:
             logger.info("Checking Sensor Systems...")
             self.terrarium_sensor_reader.read_and_store_data()

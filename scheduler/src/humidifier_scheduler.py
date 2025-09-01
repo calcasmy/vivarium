@@ -15,6 +15,7 @@ from utilities.src.logger import LogHelper
 from utilities.src.config import HumidifierConfig, SensorConfig
 from utilities.src.db_operations import DBOperations
 from terrarium.src.controllers.humidifier_controller import HumidifierController
+from terrarium.src.controllers.aeration_controller import AerationController
 from scheduler.src.device_scheduler_base import DeviceSchedulerBase
 from database.device_data_ops.device_status_queries import DeviceStatusQueries
 from database.sensor_data_ops.sensor_data_queries import SensorDataQueries
@@ -29,7 +30,10 @@ class HumidifierScheduler(DeviceSchedulerBase):
     Manages the scheduling and automatic control of the vivarium humidifier.
     """
 
-    def __init__(self, scheduler: BlockingScheduler, db_operations: DBOperations, humidifier_controller: HumidifierController):
+    def __init__(self, scheduler: BlockingScheduler, 
+                 db_operations: DBOperations, 
+                 humidifier_controller: HumidifierController, 
+                 aeration_controller: AerationController):
         """
         Initializes the HumidifierScheduler.
 
@@ -42,6 +46,7 @@ class HumidifierScheduler(DeviceSchedulerBase):
         """
         super().__init__(scheduler, db_operations)
         self.humidifier_controller = humidifier_controller
+        self.aeration_controller = aeration_controller
         self.device_id = humid_config.device_id
         
         self.sensor_data_queries = SensorDataQueries(self.db_operations)
@@ -105,6 +110,7 @@ class HumidifierScheduler(DeviceSchedulerBase):
                     logger.info("Humidity is below target. Activating humidifier.")
                     
                     self.humidifier_controller.control_humidifier(action='on')
+                    self.aeration_controller.set_fans_to_max_speed()
                     
                     self._humidifier_off_time = datetime.now() + timedelta(minutes=humid_config.runtime)
                     self._schedule_date_job(
@@ -113,6 +119,11 @@ class HumidifierScheduler(DeviceSchedulerBase):
                         args=['off'],
                         job_id='run_humidifier_off'
                     )
+                    self._schedule_date_job(
+                        self.aeration_controller.set_fans_to_default_speed,
+                        run_date=self._humidifier_off_time,
+                        job_id='aeration_default_speed_from_humidifier'
+                    )
                     logger.info(f"Scheduled humidifier to turn OFF at {self._humidifier_off_time.strftime('%Y-%m-%d %H:%M:%S')}")
                 else:
                     logger.info("Humidity is low, but humidifier is already running. No action taken.")
@@ -120,6 +131,7 @@ class HumidifierScheduler(DeviceSchedulerBase):
                 if self.humidifier_controller.is_on() and self._humidifier_off_time is None:
                     logger.info("Humidity is above target. Humidifier not required. Turning OFF.")
                     self.humidifier_controller.control_humidifier(action='off')
+                    self.aeration_controller.set_fans_to_default_speed()
 
         except Exception as e:
             logger.error(f"Error during automatic humidifier check: {e}")
