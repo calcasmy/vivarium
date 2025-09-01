@@ -77,11 +77,6 @@ class AerationController:
             is_on=is_on,
             raw_data=json.dumps(raw_data)
         )
-        self.device_status_queries.update_device_status(
-            device_id=fan_id,
-            is_on=is_on,
-            raw_data=json.dumps(raw_data)
-        )
 
     def get_intake_rpm(self) -> float:
         """Returns the last measured intake fan RPM."""
