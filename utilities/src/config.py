@@ -559,6 +559,22 @@ class SchedulerConfig(Config):
         self.application_db_type    = self.get(scheduler_section, 'application_db_type', default='local', target_type=str)
         self.max_retry_attempts     = self.get(scheduler_section, 'max_retry_attempts', default=3, target_type=int)
         self.retry_interval_minutes = self.get(scheduler_section, 'retry_interval_minutes', default= 5, target_type=int)
-        self.schedule_light_hour    = self.get(scheduler_section, 'schedule_light_hour', default=4, target_type=int)
-        self.schedule_light_minute  = self.get(scheduler_section, 'schedule_light_minute', default=0, target_type=int)
-        self.scheule_sensor_read    = self.get(scheduler_section, 'schedule_sensor_read', default=5, target_type=int)
+        self.schedule_light_hour    = self.get(scheduler_section, 'schedule_light_hour', default = 4, target_type=int)
+        self.schedule_light_minute  = self.get(scheduler_section, 'schedule_light_minute', default = 0, target_type=int)
+        self.scheule_sensor_read    = self.get(scheduler_section, 'schedule_sensor_read', default = 5, target_type=int)
+        self.pi_version             = self.get(scheduler_section, 'pi_version', default = 0, target_type = int)
+
+class coreConfig(Config):
+    """
+    A subclass for core settings
+    """
+    def __init__(self):
+        """
+        Initializes the coreConfig, loading core settings.
+        """
+        super().__init__()
+        core_section = 'core'
+        self.pi_version             = self.get(core_section, 'pi_version', default = 0, target_type = int)
+        self.thsensor_id            = self.get(core_section, 'thsensorid', default = 1, target_type = int)
+        self.application_db_type    = self.get(core_section, 'application_db_type', default='local', target_type=str)
+        self.environment            = self.get(core_section, 'environment', default='development', target_type=str)

@@ -61,7 +61,7 @@ class LightScheduler(DeviceSchedulerBase):
                 logger.info(f"Using fetched sunrise/sunset for {yesterday}: Sunrise: {db_sunrise_str}, Sunset: {db_sunset_str}")
 
                 sunrise_time_to_schedule = datetime.strptime(db_sunrise_str.split('\t')[0].strip(), '%I:%M %p').time()
-                sunset_time_to_schedule = datetime.strptime(db_sunset_str.split('\t')[0].strip(), '%I:%M %p').time()
+                sunset_time_to_schedule = datetime.strptime(db_sunset_str.split('\t')[0].strip(), '%I:%M %p').time() + timedelta(hours=2)
             else:
                 logger.warning(f"Could not retrieve complete sunrise/sunset data from database for {yesterday}. Using default times from config.")
                 # Fallback to defaults from LightConfig

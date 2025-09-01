@@ -70,6 +70,10 @@ class TerrariumSensorReader:
                 from adafruit_sht4x import SHT4x, Mode
                 sensor_device = SHT4x(i2c_bus)
                 sensor_device.mode = Mode.NOHEAT_HIGHPRECISION
+            elif sensor_id == 3:
+                from adafruit_sht31d import SHT31D
+                sensor_device = SHT31D(i2c_bus)
+                sensor_device.heater = False
             else:
                 raise ValueError(f"Unsupported sensor ID: {sensor_id}")
 
