@@ -2,7 +2,6 @@
 import os
 import sys
 import time
-import signal
 import json
 from typing import Any
 from gpiozero import PWMOutputDevice, DigitalInputDevice
@@ -35,8 +34,18 @@ class AerationController:
         self.config = AerationConfig()
         self.db_operations = db_operations
         self.device_status_queries = DeviceStatusQueries(db_operations)
-        self.intake_fan = FanController(pwm_pin=self.config.intake_pwm_pin, tach_pin=self.config.intake_tach_pin, fan_id = self.config.intake_device_id, aeration_controller=self)
-        self.exhaust_fan = FanController(pwm_pin=self.config.exhaust_pwm_pin, tach_pin=self.config.exhaust_tach_pin, fan_id= self.config.exhaust_device_id, aeration_controller=self)
+
+        self.intake_fan = FanController(
+            pwm_pin=self.config.intake_pwm_pin, 
+            tach_pin=self.config.intake_tach_pin, 
+            fan_id = self.config.intake_device_id, 
+            db_operations=self.db_operations)
+        self.exhaust_fan = FanController(
+            pwm_pin=self.config.exhaust_pwm_pin, 
+            tach_pin=self.config.exhaust_tach_pin, 
+            fan_id= self.config.exhaust_device_id, 
+            db_operations=self.db_operations)
+        
         logger.info("AerationController initialized.")
 
     def set_intake_speed(self, speed: float) -> None:
@@ -59,32 +68,32 @@ class AerationController:
         self.set_intake_speed(self.config.max_speed)
         self.set_exhaust_speed(self.config.max_speed)
 
-    def update_fan_status(self, fan_id: int, speed: float, rpm: float) -> None:
-        """
-        Updates the fan's state in the database.
-        This method is called by the FanController after a speed change.
-        """
-        is_on = speed > 0
-        raw_data = {
-            "speed": speed,
-            "rpm": rpm,
-            "is_on": is_on
-        }
+    # def update_fan_status(self, fan_id: int, speed: float, rpm: float) -> None:
+    #     """
+    #     Updates the fan's state in the database.
+    #     This method is called by the FanController after a speed change.
+    #     """
+    #     is_on = speed > 0
+    #     raw_data = {
+    #         "speed": speed,
+    #         "rpm": rpm,
+    #         "is_on": is_on
+    #     }
 
-        logger.info(f"Updating fan status for ID {fan_id}. Speed: {speed}, RPM: {rpm}")
-        self.device_status_queries.insert_device_status(
-            device_id=fan_id,
-            is_on=is_on,
-            raw_data=json.dumps(raw_data)
-        )
+    #     logger.info(f"Updating fan status for ID {fan_id}. Speed: {speed}, RPM: {rpm}")
+    #     self.device_status_queries.insert_device_status(
+    #         device_id=fan_id,
+    #         is_on=is_on,
+    #         raw_data=json.dumps(raw_data)
+    #     )
 
-    def get_intake_rpm(self) -> float:
-        """Returns the last measured intake fan RPM."""
-        return self.intake_fan.get_rpm()
+    # def get_intake_rpm(self) -> float:
+    #     """Returns the last measured intake fan RPM."""
+    #     return self.intake_fan.get_rpm()
 
-    def get_exhaust_rpm(self) -> float:
-        """Returns the last measured exhaust fan RPM."""
-        return self.exhaust_fan.get_rpm()
+    # def get_exhaust_rpm(self) -> float:
+    #     """Returns the last measured exhaust fan RPM."""
+    #     return self.exhaust_fan.get_rpm()
     
     def cleanup(self) -> None:
         """
@@ -94,34 +103,41 @@ class AerationController:
         self.exhaust_fan.cleanup()
         logger.info("AerationController GPIO cleaned up.")
 
-    # --- Main block for debugging and testing ---
+# --- Main block for debugging and testing ---
 if __name__ == '__main__':
-    controller = None
-    try:
-        controller = AerationController()
+    from utilities.src.db_operations import ConnectionDetails, DBOperations
+    from utilities.src.config import DatabaseConfig
 
-        print("Starting fans at medium speed...")
-        controller.set_intake_speed(0.5)
-        controller.set_exhaust_speed(0.5)
+    db_config = DatabaseConfig()
+    db_operations = DBOperations()
+    
+    try:
+        db_operations.connect(ConnectionDetails(
+            host=db_config.postgres_local_connection.host,
+            port=db_config.postgres_local_connection.port,
+            user=db_config.postgres_local_connection.user,
+            password=db_config.postgres_local_connection.password,
+            dbname=db_config.postgres_local_connection.dbname
+        ))
+
+        controller = AerationController(db_operations=db_operations)
+        print("Starting fans at default speed...")
+        controller.set_fans_to_default_speed()
         
-        for i in range(5):
-            time.sleep(2)
-            intake_rpm = controller.get_intake_rpm()
-            exhaust_rpm = controller.get_exhaust_rpm()
-            print(f"Intake Fan RPM: {intake_rpm:.2f} | Exhaust Fan RPM: {exhaust_rpm:.2f}")
+        time.sleep(5)
 
         print("\nSetting fans to full speed...")
-        controller.set_intake_speed(1.0)
-        controller.set_exhaust_speed(1.0)
+        controller.set_fans_to_max_speed()
         
-        for i in range(5):
-            time.sleep(2)
-            intake_rpm = controller.get_intake_rpm()
-            exhaust_rpm = controller.get_exhaust_rpm()
-            print(f"Intake Fan RPM: {intake_rpm:.2f} | Exhaust Fan RPM: {exhaust_rpm:.2f}")
+        time.sleep(5)
+        
+        print("\nSetting fans to default speed...")
+        controller.set_fans_to_default_speed()
 
     except KeyboardInterrupt:
         print("\nExiting and cleaning up.")
     finally:
         if controller is not None:
             controller.cleanup()
+        if db_operations:
+            db_operations.close()

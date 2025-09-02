@@ -2,6 +2,7 @@
 import os
 import sys
 import time
+import json
 import signal
 from typing import Any
 from gpiozero import PWMOutputDevice, DigitalInputDevice
@@ -14,7 +15,8 @@ if vivarium_path not in sys.path:
 # Project Imports
 from utilities.src.logger import LogHelper
 from utilities.src.config import AerationConfig
-from terrarium.src.controllers.aeration_controller import AerationController
+from utilities.src.db_operations import DBOperations
+from database.device_data_ops.device_status_queries import DeviceStatusQueries
 
 logger = LogHelper.get_logger(__name__)
 
@@ -23,7 +25,7 @@ class FanController:
     A reusable controller for a 4-pin PC fan via PWM and its RPM using gpiozero.
     This class can be used for any fan by providing the specific GPIO pins.
     """
-    def __init__(self, pwm_pin: int, tach_pin: int, fan_id:int = 5, aeration_controller: AerationController = None):
+    def __init__(self, pwm_pin: int, tach_pin: int, fan_id:int = 5, db_operations: DBOperations = None):
         """
         Initializes the FanController with specific pins.
 
@@ -31,18 +33,21 @@ class FanController:
         :type pwm_pin: int
         :param tach_pin: The GPIO pin for the tachometer (RPM sensing).
         :type tach_pin: int
-        :param aeration_controller: The parent AerationController instance.
-        :type aeration_controller: AerationController
+        :param fan_id: The unique ID for this fan device.
+        :type fan_id: int
+        :param db_operations: The shared database operations instance.
+        :type db_operations: DBOperations
         """
         self.config = AerationConfig()
         self.fan_id = fan_id
+        self.db_operations = db_operations
+        self.device_status_queries = DeviceStatusQueries(self.db_operations)
         self.fan_pwm = PWMOutputDevice(pin=pwm_pin, frequency=self.config.frequency, initial_value=0)
         
         self.fan_tach = DigitalInputDevice(pin=tach_pin, pull_up=True)
         
         self.rpm = 0
         self.pulse_count = 0
-        self.aeration_controller = aeration_controller
         self.fan_speed_change_delay = 2
         # self.last_update_time = time.time()
         
@@ -88,14 +93,8 @@ class FanController:
         
         current_rpm = self._calculate_rpm()
         self.rpm = current_rpm
-        
-        if self.aeration_controller:
-            self.aeration_controller.update_fan_status(self.fan_id, speed, current_rpm)
 
-        # """Sets the fan speed (0.0 to 1.0)."""
-        # if not 0.0 <= speed <= 1.0:
-        #     raise ValueError("Speed must be a value between 0.0 and 1.0")
-        # self.fan_pwm.value = speed
+        self._update_status(speed, current_rpm)
         
     def get_rpm(self) -> float:
         """Returns the last measured fan RPM."""
@@ -108,3 +107,20 @@ class FanController:
         self.fan_pwm.value = 0
         self.fan_tach.close()
         logger.info("FanController GPIO cleaned up.")
+    
+    def _update_status(self, speed: float, rpm: float) -> None:
+        """
+        Updates the fan's state in the database.
+        """
+        is_on = speed > 0
+        raw_data = {
+            "speed": speed,
+            "rpm": rpm,
+            "is_on": is_on
+        }
+        logger.info(f"Updating fan status for ID {self.fan_id}. Speed: {speed}, RPM: {rpm}")
+        self.device_status_queries.update_device_status(
+            device_id=self.fan_id,
+            is_on=is_on,
+            raw_data=json.dumps(raw_data)
+        )
