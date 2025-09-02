@@ -35,11 +35,11 @@ class AerationController:
         self.db_operations = db_operations
         self.device_status_queries = DeviceStatusQueries(db_operations)
 
-        # self.intake_fan = FanController(
-        #     pwm_pin=self.config.intake_pwm_pin, 
-        #     tach_pin=self.config.intake_tach_pin, 
-        #     fan_id = self.config.intake_device_id, 
-        #     db_operations=self.db_operations)
+        self.intake_fan = FanController(
+            pwm_pin=self.config.intake_pwm_pin, 
+            tach_pin=self.config.intake_tach_pin, 
+            fan_id = self.config.intake_device_id, 
+            db_operations=self.db_operations)
         self.exhaust_fan = FanController(
             pwm_pin=self.config.exhaust_pwm_pin, 
             tach_pin=self.config.exhaust_tach_pin, 
@@ -48,9 +48,9 @@ class AerationController:
         
         logger.info("AerationController initialized.")
 
-    # def set_intake_speed(self, speed: float) -> None:
-    #     """Sets the intake fan speed (0.0 to 1.0)."""
-    #     self.intake_fan.set_speed(speed)
+    def set_intake_speed(self, speed: float) -> None:
+        """Sets the intake fan speed (0.0 to 1.0)."""
+        self.intake_fan.set_speed(speed)
 
     def set_exhaust_speed(self, speed: float) -> None:
         """Sets the exhaust fan speed (0.0 to 1.0)."""
@@ -59,13 +59,13 @@ class AerationController:
     def set_fans_to_default_speed(self) -> None:
         """Sets both fans to the default speed."""
         logger.info(f"Setting both fans to default speed: {self.config.low_speed}")
-        # self.set_intake_speed(self.config.low_speed)
+        self.set_intake_speed(self.config.low_speed)
         self.set_exhaust_speed(self.config.low_speed)
 
     def set_fans_to_max_speed(self) -> None:
         """Sets both fans to the max speed."""
         logger.info(f"Setting both fans to max speed: {self.config.max_speed}")
-        # self.set_intake_speed(self.config.max_speed)
+        self.set_intake_speed(self.config.max_speed)
         self.set_exhaust_speed(self.config.max_speed)
 
     # def update_fan_status(self, fan_id: int, speed: float, rpm: float) -> None:
@@ -99,7 +99,7 @@ class AerationController:
         """
         Cleans up GPIO resources for both fans.
         """
-        # self.intake_fan.cleanup()
+        self.intake_fan.cleanup()
         self.exhaust_fan.cleanup()
         logger.info("AerationController GPIO cleaned up.")
 
