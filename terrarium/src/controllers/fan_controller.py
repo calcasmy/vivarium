@@ -119,7 +119,7 @@ class FanController:
             "is_on": is_on
         }
         logger.info(f"Updating fan status for ID {self.fan_id}. Speed: {speed}, RPM: {rpm}")
-        self.device_status_queries.update_device_status(
+        self.device_status_queries.insert_device_status(
             device_id=self.fan_id,
             is_on=is_on,
             raw_data=json.dumps(raw_data)
