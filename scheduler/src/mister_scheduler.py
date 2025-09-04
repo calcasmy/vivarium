@@ -42,6 +42,7 @@ class MisterScheduler(DeviceSchedulerBase):
         self.at_hour = mister_config.at_hour
         self.at_minute = mister_config.at_minute
         self.duration = mister_config.duration
+        self.aeration_controller = aeration_controller
         logger.info("MisterScheduler initialized.")
 
     def schedule_misting_job(self, duration: int = None) -> None:
