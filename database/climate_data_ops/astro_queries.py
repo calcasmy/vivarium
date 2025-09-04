@@ -213,7 +213,7 @@ class AstroQueries(BaseQuery):
             SELECT sunrise, sunset 
             FROM climate_astro_data 
             WHERE location_id = %s
-            ORDER BY date DESC 
+            ORDER BY forecast_date DESC 
             LIMIT 1;
         """
         params = (location_id,)
