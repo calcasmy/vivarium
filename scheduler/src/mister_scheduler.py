@@ -86,6 +86,7 @@ class MisterScheduler(DeviceSchedulerBase):
                 self.scheduler.add_job(
                     self.aeration_controller.set_fans_to_default_speed,
                     trigger=DateTrigger(run_date=off_time),
+                    args=[],
                     id='aeration_default_speed_from_mister',
                     name='Aeration Default Speed (Mister)',
                     replace_existing=True
@@ -94,13 +95,31 @@ class MisterScheduler(DeviceSchedulerBase):
             except Exception as e:
                 logger.error(f"Error scheduling mister off job: {e}")
 
+        # # Schedule the "ON" action using configurable hour and minute
+        # self.scheduler.add_job(
+        #     run_mister_cycle,
+        #     trigger=CronTrigger(hour=self.at_hour, minute=self.at_minute),
+        #     id=job_id_on,
+        #     name='Morning Mister ON'
+        # )
+        # logger.info(f"Scheduled daily mister run at {self.at_hour}:{self.at_minute} for {self.duration} seconds. 💧")
+
+        # 1.a For testing, schedule mister job to run in 1 minute
+        test_run_time = datetime.now() + timedelta(minutes=1)
+        logger.info(f"TESTING: Scheduling mister job to run at {test_run_time.strftime('%Y-%m-%d %H:%M:%S')}")
         self.scheduler.add_job(
             run_mister_cycle,
-            trigger=CronTrigger(hour=self.at_hour, minute=self.at_minute),
-            id=job_id_on,
-            name='Morning Mister ON'
+            trigger=DateTrigger(run_date=test_run_time),
+            id='mister_on_test',
+            name='Test Mister ON Job'
         )
-        logger.info(f"Scheduled daily mister run at {self.at_hour}:{self.at_minute} for {self.duration} seconds. 💧")
+
+        # self.scheduler.add_job(
+        #     run_mister_cycle,
+        #     'date',
+        #     run_date=datetime.now(), # Set the run date to the current time for immediate execution
+        #     id='update_lights_immediate'
+        # )
 
         # 2. -- TESTING: SCHEDULE MISTER TO RUN NOW --
         # logger.info("TESTING: Starting mister run immediately and scheduling OFF.")
