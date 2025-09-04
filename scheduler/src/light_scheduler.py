@@ -61,7 +61,7 @@ class LightScheduler(DeviceSchedulerBase):
                 logger.info(f"Using fetched sunrise/sunset for {yesterday}: Sunrise: {db_sunrise_str}, Sunset: {db_sunset_str}")
 
                 sunrise_time_to_schedule = datetime.strptime(db_sunrise_str.split('\t')[0].strip(), '%I:%M %p').time()
-                sunset_time_to_schedule = datetime.strptime(db_sunset_str.split('\t')[0].strip(), '%I:%M %p').time() + timedelta(hours=2)
+                sunset_time_to_schedule = datetime.strptime(db_sunset_str.split('\t')[0].strip(), '%I:%M %p').time()
             else:
                 logger.warning(f"Could not retrieve complete sunrise/sunset data from database for {yesterday}. Using default times from config.")
                 # Fallback to defaults from LightConfig
@@ -119,6 +119,11 @@ class LightScheduler(DeviceSchedulerBase):
                 logger.info("Current time is outside the scheduled ON period. Ensuring lights are OFF.")
                 self.light_controller.control_light(action='off')
 
+            # Convert the time object to a full datetime object
+            sunset_datetime = datetime.datetime.combine(datetime.date.today(), sunset_time_to_schedule)
+            sunset_datetime_with_offset = sunset_datetime + timedelta(hours=2)
+            final_sunset_time = sunset_datetime_with_offset.time()
+
             # 2. SCHEDULE CRON JOBS: Now schedule the jobs for future events.
             self._schedule_cron_job(
                 self.light_controller.control_light,
@@ -130,12 +135,12 @@ class LightScheduler(DeviceSchedulerBase):
             )
             self._schedule_cron_job(
                 self.light_controller.control_light,
-                hour=sunset_time_to_schedule.hour,
-                minute=sunset_time_to_schedule.minute,
-                second=sunset_time_to_schedule.second,
+                hour=final_sunset_time.hour,
+                minute=final_sunset_time.minute,
+                second=final_sunset_time.second,
                 args=['off'],
                 job_id='lights_off_daily'
             )
-            logger.info(f"Daily light schedule set: ON at {sunrise_time_to_schedule.strftime('%H:%M:%S')}, OFF at {sunset_time_to_schedule.strftime('%H:%M:%S')}")
+            logger.info(f"Daily light schedule set: ON at {sunrise_time_to_schedule.strftime('%H:%M:%S')}, OFF at {final_sunset_time.strftime('%H:%M:%S')}")
         else:
             logger.critical("Failed to determine valid sunrise/sunset times. Light schedule not set.")
