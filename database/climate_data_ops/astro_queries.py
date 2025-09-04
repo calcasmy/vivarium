@@ -217,5 +217,5 @@ class AstroQueries(BaseQuery):
             LIMIT 1;
         """
         params = (location_id,)
-        result = self.db_operations.execute_query(query, params, fetch_one=True)
+        result = self.db_ops.execute_query(query, params, fetch_one=True)
         return result
