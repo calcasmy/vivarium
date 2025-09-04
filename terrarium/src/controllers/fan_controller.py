@@ -123,10 +123,10 @@ class FanController:
         try:
             self.db_operations.begin_transaction()
             self.device_status_queries.insert_device_status(
-                device_id=self.fan_id,
-                timestamp=(datetime.now()).strftime("%Y-%m-%d %H:%M:%S"),
-                is_on=is_on,
-                raw_data = json.dumps(raw_data)
+                device_id = self.fan_id,
+                timestamp = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S"),
+                is_on = is_on,
+                device_data = json.dumps(raw_data)
             )
             self.db_operations.commit_transaction()
             logger.info(f"Updating fan status for ID {self.fan_id}. Speed: {speed}, RPM: {rpm}")
