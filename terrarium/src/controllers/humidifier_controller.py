@@ -130,7 +130,7 @@ class HumidifierController(BaseDeviceController):
             logger.info(f"Current device humidity reading: {self.humidifier.humidity}%")
         elif action == 'on':
             self.humidifier.turn_on()
-            self.humidifier.set_mist_level(level=humid_config.mistlevel_medium)
+            self.humidifier.set_mist_level(level=humid_config.mistlevel_high)
             logger.info("Humidifier turned ON via manual command.")
         elif action == 'off':
             self.humidifier.turn_off()
