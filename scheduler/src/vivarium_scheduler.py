@@ -187,7 +187,6 @@ class VivariumScheduler:
         try:
             logger.info("Checking Humidifier System...")
             self.humidifier_controller.control_humidifier(action="off")
-            self.humidifier_controller._update_status(False)
             logger.info("Humidifier system: Initial state set to OFF.")
             # self.humidifier_scheduler.check_and_run_humidifier()
             logger.info("Humidifier system: Current state adjusted based on environmental conditions.")
