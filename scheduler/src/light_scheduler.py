@@ -120,7 +120,7 @@ class LightScheduler(DeviceSchedulerBase):
                 self.light_controller.control_light(action='off')
 
             # Convert the time object to a full datetime object
-            sunset_datetime = datetime.datetime.combine(datetime.date.today(), sunset_time_to_schedule)
+            sunset_datetime = datetime.combine(datetime.date.today(), sunset_time_to_schedule)
             sunset_datetime_with_offset = sunset_datetime + timedelta(hours=2)
             final_sunset_time = sunset_datetime_with_offset.time()
 
