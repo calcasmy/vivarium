@@ -108,21 +108,20 @@ class LightScheduler(DeviceSchedulerBase):
         sunrise_time_to_schedule = sun_schedule['sunrise_time_to_schedule']
         sunset_time_to_schedule = sun_schedule['sunset_time_to_schedule']
 
-        # -- ACTUAL SCHEDULING LOGIC
         if sunrise_time_to_schedule and sunset_time_to_schedule:
-            # 1. IMMEDIATE STATE CHECK: Turn on or off the light based on the current time.
+            # Convert the time object to a full datetime object
+            sunset_datetime = datetime.combine(date.today(), sunset_time_to_schedule)
+            sunset_datetime_with_offset = sunset_datetime + timedelta(hours=2)
+            final_sunset_time = sunset_datetime_with_offset.time()
+
+            # 1. IMMEDIATE STATE CHECK: Turn on or off the light based on the adjusted time.
             current_time = datetime.now().time()
-            if sunrise_time_to_schedule <= current_time <= sunset_time_to_schedule:
+            if sunrise_time_to_schedule <= current_time <= final_sunset_time: # Use final_sunset_time here
                 logger.info("Current time is within the scheduled ON period. Turning lights ON.")
                 self.light_controller.control_light(action='on')
             else:
                 logger.info("Current time is outside the scheduled ON period. Ensuring lights are OFF.")
                 self.light_controller.control_light(action='off')
-
-            # Convert the time object to a full datetime object
-            sunset_datetime = datetime.combine(date.today(), sunset_time_to_schedule)
-            sunset_datetime_with_offset = sunset_datetime + timedelta(hours=2)
-            final_sunset_time = sunset_datetime_with_offset.time()
 
             # 2. SCHEDULE CRON JOBS: Now schedule the jobs for future events.
             self._schedule_cron_job(
@@ -144,3 +143,50 @@ class LightScheduler(DeviceSchedulerBase):
             logger.info(f"Daily light schedule set: ON at {sunrise_time_to_schedule.strftime('%H:%M:%S')}, OFF at {final_sunset_time.strftime('%H:%M:%S')}")
         else:
             logger.critical("Failed to determine valid sunrise/sunset times. Light schedule not set.")
+
+
+
+
+        # logger.info("Updating terrarium lights schedule.")
+        
+        # sun_schedule = self._fetch_sunrise_sunset()
+
+        # sunrise_time_to_schedule = sun_schedule['sunrise_time_to_schedule']
+        # sunset_time_to_schedule = sun_schedule['sunset_time_to_schedule']
+
+        # # -- ACTUAL SCHEDULING LOGIC
+        # if sunrise_time_to_schedule and sunset_time_to_schedule:
+        #     # 1. IMMEDIATE STATE CHECK: Turn on or off the light based on the current time.
+        #     current_time = datetime.now().time()
+        #     if sunrise_time_to_schedule <= current_time <= sunset_time_to_schedule:
+        #         logger.info("Current time is within the scheduled ON period. Turning lights ON.")
+        #         self.light_controller.control_light(action='on')
+        #     else:
+        #         logger.info("Current time is outside the scheduled ON period. Ensuring lights are OFF.")
+        #         self.light_controller.control_light(action='off')
+
+        #     # Convert the time object to a full datetime object
+        #     sunset_datetime = datetime.combine(date.today(), sunset_time_to_schedule)
+        #     sunset_datetime_with_offset = sunset_datetime + timedelta(hours=2)
+        #     final_sunset_time = sunset_datetime_with_offset.time()
+
+        #     # 2. SCHEDULE CRON JOBS: Now schedule the jobs for future events.
+        #     self._schedule_cron_job(
+        #         self.light_controller.control_light,
+        #         hour=sunrise_time_to_schedule.hour,
+        #         minute=sunrise_time_to_schedule.minute,
+        #         second=sunrise_time_to_schedule.second,
+        #         args=['on'],
+        #         job_id='lights_on_daily'
+        #     )
+        #     self._schedule_cron_job(
+        #         self.light_controller.control_light,
+        #         hour=final_sunset_time.hour,
+        #         minute=final_sunset_time.minute,
+        #         second=final_sunset_time.second,
+        #         args=['off'],
+        #         job_id='lights_off_daily'
+        #     )
+        #     logger.info(f"Daily light schedule set: ON at {sunrise_time_to_schedule.strftime('%H:%M:%S')}, OFF at {final_sunset_time.strftime('%H:%M:%S')}")
+        # else:
+        #     logger.critical("Failed to determine valid sunrise/sunset times. Light schedule not set.")
