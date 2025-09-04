@@ -122,6 +122,7 @@ class HumidifierScheduler(DeviceSchedulerBase):
                     self._schedule_date_job(
                         self.aeration_controller.set_fans_to_default_speed,
                         run_date=self._humidifier_off_time,
+                        args=[],
                         job_id='aeration_default_speed_from_humidifier'
                     )
                     logger.info(f"Scheduled humidifier to turn OFF at {self._humidifier_off_time.strftime('%Y-%m-%d %H:%M:%S')}")
