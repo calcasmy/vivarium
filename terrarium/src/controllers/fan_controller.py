@@ -5,6 +5,7 @@ import time
 import json
 import signal
 from typing import Any
+from datetime import time as datetime_time, datetime
 from gpiozero import PWMOutputDevice, DigitalInputDevice
 
 # Path Configuration
@@ -118,9 +119,19 @@ class FanController:
             "rpm": rpm,
             "is_on": is_on
         }
-        logger.info(f"Updating fan status for ID {self.fan_id}. Speed: {speed}, RPM: {rpm}")
-        self.device_status_queries.insert_device_status(
-            device_id=self.fan_id,
-            is_on=is_on,
-            raw_data=json.dumps(raw_data)
-        )
+
+        try:
+            self.db_operations.begin_transaction()
+            self.device_status_queries.insert_device_status(
+                device_id=self.fan_id,
+                timestamp=(datetime.now()).strftime("%Y-%m-%d %H:%M:%S"),
+                is_on=is_on,
+                raw_data = json.dumps(raw_data)
+            )
+            self.db_operations.commit_transaction()
+            logger.info(f"Updating fan status for ID {self.fan_id}. Speed: {speed}, RPM: {rpm}")
+        except Exception as e:
+            self.db_operations.rollback_transaction()
+            error_message = f"Failed to update status for {self.fan_id} : {e}"
+            logger.error(error_message)
+            raise
