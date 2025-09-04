@@ -95,50 +95,24 @@ class MisterScheduler(DeviceSchedulerBase):
             except Exception as e:
                 logger.error(f"Error scheduling mister off job: {e}")
 
-        # # Schedule the "ON" action using configurable hour and minute
-        # self.scheduler.add_job(
-        #     run_mister_cycle,
-        #     trigger=CronTrigger(hour=self.at_hour, minute=self.at_minute),
-        #     id=job_id_on,
-        #     name='Morning Mister ON'
-        # )
-        # logger.info(f"Scheduled daily mister run at {self.at_hour}:{self.at_minute} for {self.duration} seconds. 💧")
-
-        # 1.a For testing, schedule mister job to run in 1 minute
-        test_run_time = datetime.now() + timedelta(minutes=1)
-        logger.info(f"TESTING: Scheduling mister job to run at {test_run_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        # 1. -- SCHEDULE MISTER TO RUN AT A SCHEDULED TIME USING CONFIGURABLE HOUR AND MINUTE
         self.scheduler.add_job(
             run_mister_cycle,
-            trigger=DateTrigger(run_date=test_run_time),
-            id='mister_on_test',
-            name='Test Mister ON Job'
+            trigger=CronTrigger(hour=self.at_hour, minute=self.at_minute),
+            id=job_id_on,
+            name='Morning Mister ON'
         )
+        logger.info(f"Scheduled daily mister run at {self.at_hour}:{self.at_minute} for {self.duration} seconds. 💧")
 
+        # # 1.a. -- TESTING: SCHEDULE MISTER TO RUN IN 1 MINUTE
+        # test_run_time = datetime.now() + timedelta(minutes=1)
+        # logger.info(f"TESTING: Scheduling mister job to run at {test_run_time.strftime('%Y-%m-%d %H:%M:%S')}")
         # self.scheduler.add_job(
         #     run_mister_cycle,
-        #     'date',
-        #     run_date=datetime.now(), # Set the run date to the current time for immediate execution
-        #     id='update_lights_immediate'
+        #     trigger=DateTrigger(run_date=test_run_time),
+        #     id='mister_on_test',
+        #     name='Test Mister ON Job'
         # )
-
-        # 2. -- TESTING: SCHEDULE MISTER TO RUN NOW --
-        # logger.info("TESTING: Starting mister run immediately and scheduling OFF.")
-        
-        # # Turn on the mister immediately
-        # self.mister_controller.control_mister(action='on')
-        
-        # # Schedule the mister to turn off 5 seconds from now
-        # off_time = datetime.now() + timedelta(seconds=5)
-        # self.scheduler.add_job(
-        #     self.mister_controller.control_mister,
-        #     'date',
-        #     run_date=off_time,
-        #     args=['off'],
-        #     id='mister_off_test_job',
-        #     name='Test Mister OFF Job'
-        # )
-        # logger.info(f"TESTING: Scheduled mister to turn OFF at {off_time.strftime('%Y-%m-%d %H:%M:%S')}")
-
 
 # import os
 # import sys
