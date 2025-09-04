@@ -1,8 +1,6 @@
 #!/bin/bash
+echo "Updating vivarium service..."
+cd /home/calcasmy/vivarium || exit 1
+
 git fetch origin main && git reset --hard origin/main
-sudo systemctl stop vivarium.service
-sudo systemctl disable vivarium.service
-sudo systemctl daemon-reload
-sudo systemctl enable vivarium.service
-sudo systemctl start vivarium.service
-sudo journalctl -u vivarium.service -f
+./restart_vivarium_service.sh
